@@ -24,6 +24,21 @@
 		"files.insertFinalNewline": true,
 		"files.trimFinalNewlines": true,
 		"cmake.configureOnOpen": true,
+		"cmake.cmakePath": "C:\\ST\\STM32CubeIDE_2.1.1\\STM32CubeIDE\\plugins\\com.st.stm32cube.ide.mcu.externaltools.cmake.win32_1.1.101.202603101401\\tools\\bin\\cmake.exe",
+		"cmake.generator": "Ninja",
+		"cmake.buildDirectory": "${workspaceFolder}\\build-ninja",
+		"cmake.buildBeforeRun": true,
+		"cmake.debugConfig": {
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${command:cmake.launchTargetPath}",
+			"cwd": "${workspaceFolder}",
+			"args": []
+		},
+		"cmake.configureSettings": {
+			"CMAKE_MAKE_PROGRAM": "C:\\ST\\STM32CubeIDE_2.1.1\\STM32CubeIDE\\plugins\\com.st.stm32cube.ide.mcu.externaltools.ninja.win32_1.1.100.202601091506\\tools\\bin\\ninja.exe",
+			"CMAKE_TOOLCHAIN_FILE": "C:\\Users\\DerekNeely\\bin\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
+		},
 		"files.associations": {
 			"glob.h": "c",
 			"lvgl.h": "c"
@@ -34,11 +49,27 @@
 		"version": "2.0.0",
 		"tasks": [
 			{
-				"label": "Build",
-				"command": "cmake",
+				"label": "Configure",
+				"type": "shell",
+				"command": "C:\\ST\\STM32CubeIDE_2.1.1\\STM32CubeIDE\\plugins\\com.st.stm32cube.ide.mcu.externaltools.cmake.win32_1.1.101.202603101401\\tools\\bin\\cmake.exe",
 				"args": [
-					"--build", "${command:cmake.buildDirectory}"
+					"-S", "${workspaceFolder}",
+					"-B", "${workspaceFolder}\\build-ninja",
+					"-G", "Ninja",
+					"-DCMAKE_MAKE_PROGRAM=C:\\ST\\STM32CubeIDE_2.1.1\\STM32CubeIDE\\plugins\\com.st.stm32cube.ide.mcu.externaltools.ninja.win32_1.1.100.202601091506\\tools\\bin\\ninja.exe",
+					"-DCMAKE_TOOLCHAIN_FILE=C:/Users/DerekNeely/bin/vcpkg/scripts/buildsystems/vcpkg.cmake"
 				],
+				"group": "build",
+				"problemMatcher": []
+			},
+			{
+				"label": "Build",
+				"type": "shell",
+				"command": "C:\\ST\\STM32CubeIDE_2.1.1\\STM32CubeIDE\\plugins\\com.st.stm32cube.ide.mcu.externaltools.cmake.win32_1.1.101.202603101401\\tools\\bin\\cmake.exe",
+				"args": [
+					"--build", "${workspaceFolder}\\build-ninja"
+				],
+				"dependsOn": "Configure",
 				"group": {
 					"kind": "build",
 					"isDefault": true
@@ -59,12 +90,15 @@
 			{
 				"label": "Build and Run",
 				"type": "shell",
-				"command": "${workspaceFolder}/bin/main",
+				"command": "${workspaceFolder}\\..\\..\\run-hmi-sim.bat",
+				"options": {
+					"cwd": "${workspaceFolder}\\..\\.."
+				},
 				"group": {
-					"kind": "test",
+					"kind": "build",
 					"isDefault": true
 				},
-				"dependsOn": "Build"
+				"problemMatcher": []
 			}
 		],
 	},
@@ -72,6 +106,15 @@
 	"launch": {
 		"version": "0.2.0",
 		"configurations": [
+			{
+				"name": "Run HMI Simulator",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceFolder}\\bin\\main.exe",
+				"args": [],
+				"cwd": "${workspaceFolder}",
+				"preLaunchTask": "Build"
+			},
 			{
 				"name": "Debug LVGL demo with gdb",
 				"type": "cppdbg",

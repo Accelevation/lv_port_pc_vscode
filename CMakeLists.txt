@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.12.4)
 project(lvgl C CXX)
 
+set(HMI_ROOT_DIR "${PROJECT_SOURCE_DIR}/../..")
+set(HMI_SHARED_UI_DIR "${HMI_ROOT_DIR}/src/ui")
+
 # Set the correct FreeRTOS port for your system (e.g., Posix for WSL)
 set(FREERTOS_PORT GCC_POSIX CACHE STRING "Port for FreeRTOS on Posix environment")
 
@@ -69,7 +72,19 @@ add_compile_definitions($<$<BOOL:${LV_USE_FFMPEG}>:LV_USE_FFMPEG=1>)
 add_subdirectory(lvgl)
 target_include_directories(lvgl PUBLIC ${PROJECT_SOURCE_DIR} ${SDL2_INCLUDE_DIRS})
 
-set(MAIN_SOURCES src/mouse_cursor_icon.c src/hal/hal.c)
+set(MAIN_SOURCES
+    src/mouse_cursor_icon.c
+    src/hal/hal.c
+    ${HMI_SHARED_UI_DIR}/assets/logo.c
+    ${HMI_SHARED_UI_DIR}/navigation.cpp
+    ${HMI_SHARED_UI_DIR}/ui.cpp
+    ${HMI_SHARED_UI_DIR}/views/main_view.cpp
+    ${HMI_SHARED_UI_DIR}/views/settings_view.cpp
+    ${HMI_SHARED_UI_DIR}/widgets/icon_button.cpp
+    ${HMI_SHARED_UI_DIR}/widgets/nav_bar.cpp
+    ${HMI_SHARED_UI_DIR}/widgets/screen.cpp
+    ${HMI_SHARED_UI_DIR}/widgets/section_card.cpp
+)
 set(MAIN_LIBS lvgl lvgl::examples lvgl::demos lvgl::thorvg ${SDL2_LIBRARIES})
 
 # Create the main executable, depending on the FreeRTOS option
@@ -143,6 +158,7 @@ endif()
 
 add_executable(main ${MAIN_SOURCES})
 target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
+target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR})
 target_link_libraries(main ${MAIN_LIBS})
 
 # On Windows, GUI applications do not show a console by default,
@@ -159,31 +175,33 @@ endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Debug mode enabled")
 
-    target_compile_options(lvgl PRIVATE
-        -pedantic-errors
-        -Wall
-        -Wclobbered
-        -Wdeprecated
-        -Wdouble-promotion
-        -Wempty-body
-        -Wextra
-        -Wformat-security
-        -Wmaybe-uninitialized
-        # -Wmissing-prototypes
-        -Wpointer-arith
-        -Wmultichar
-        -Wno-pedantic # ignored for now, we convert functions to pointers for properties table.
-        -Wreturn-type
-        -Wshadow
-        -Wshift-negative-value
-        -Wsizeof-pointer-memaccess
-        -Wtype-limits
-        -Wundef
-        -Wuninitialized
-        -Wunreachable-code
-        -Wfloat-conversion
-        -Wstrict-aliasing
-    )
+    if(NOT MSVC)
+        target_compile_options(lvgl PRIVATE
+            -pedantic-errors
+            -Wall
+            -Wclobbered
+            -Wdeprecated
+            -Wdouble-promotion
+            -Wempty-body
+            -Wextra
+            -Wformat-security
+            -Wmaybe-uninitialized
+            # -Wmissing-prototypes
+            -Wpointer-arith
+            -Wmultichar
+            -Wno-pedantic # ignored for now, we convert functions to pointers for properties table.
+            -Wreturn-type
+            -Wshadow
+            -Wshift-negative-value
+            -Wsizeof-pointer-memaccess
+            -Wtype-limits
+            -Wundef
+            -Wuninitialized
+            -Wunreachable-code
+            -Wfloat-conversion
+            -Wstrict-aliasing
+        )
+    endif()
 
 if (ASAN)
     message(STATUS "AddressSanitizer enabled")

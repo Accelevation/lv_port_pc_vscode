@@ -1,5 +1,6 @@
 # Ignore build folder
 build/
+build-*/
 bin/
 
 # Ignore all dot folders, with below exceptions
