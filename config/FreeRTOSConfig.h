@@ -1,28 +1,27 @@
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
-#include <stdint.h>
-extern uint32_t SystemCoreClock;
-
 /*-----------------------------------------------------------
- * Application specific definitions.
+ * FreeRTOS configuration for the LVGL PC simulator
+ * (Windows host, MSVC-MingW Windows simulator port)
  *
- * These definitions should be adjusted for your particular hardware and
- * application requirements.
- *
- * THESE PARAMETERS ARE DESCRIBED WITHIN THE 'CONFIGURATION' SECTION OF THE
- * FreeRTOS API DOCUMENTATION AVAILABLE ON THE FreeRTOS.org WEB SITE.
+ * configCPU_CLOCK_HZ is unused by the Windows port for tick generation
+ * (it uses a Win32 multimedia timer instead) but several kernel subsystems
+ * still reference it, so a literal value is required.
  *----------------------------------------------------------*/
 
+#include <stdint.h>
+
 #define configUSE_PREEMPTION                    1
+#define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 #define configUSE_IDLE_HOOK                     0
 #define configUSE_TICK_HOOK                     0
-#define configCPU_CLOCK_HZ                      ( SystemCoreClock )
+#define configCPU_CLOCK_HZ                      ( ( uint32_t ) 1000000 )
 #define configTICK_RATE_HZ                      ( ( TickType_t ) 1000 )
-#define configMAX_PRIORITIES                    ( 5 )
-#define configMINIMAL_STACK_SIZE                ( ( unsigned short ) 256 )
-#define configTOTAL_HEAP_SIZE                   ( ( size_t ) ( 512 * 1024 * 1024 ) )  // 512 MB Heap
-#define configMAX_TASK_NAME_LEN                 ( 10 )
+#define configMAX_PRIORITIES                    ( 7 )
+#define configMINIMAL_STACK_SIZE                ( ( unsigned short ) 1024 )
+#define configTOTAL_HEAP_SIZE                   ( ( size_t ) ( 256 * 1024 ) )
+#define configMAX_TASK_NAME_LEN                 ( 16 )
 #define configUSE_TRACE_FACILITY                1
 #define configUSE_16_BIT_TICKS                  0
 #define configIDLE_SHOULD_YIELD                 1
@@ -36,6 +35,8 @@ extern uint32_t SystemCoreClock;
 #define configGENERATE_RUN_TIME_STATS           0
 #define configUSE_TASK_NOTIFICATIONS            1
 #define configUSE_STREAM_BUFFERS                0
+#define configSUPPORT_DYNAMIC_ALLOCATION        1
+#define configSUPPORT_STATIC_ALLOCATION         0
 
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES                   0
@@ -46,6 +47,15 @@ extern uint32_t SystemCoreClock;
 #define configTIMER_TASK_PRIORITY               ( 2 )
 #define configTIMER_QUEUE_LENGTH                10
 #define configTIMER_TASK_STACK_DEPTH            ( configMINIMAL_STACK_SIZE * 2 )
+
+/* configASSERT — the MSVC-MingW port references this; trap into the debugger
+ * on assertion failure. */
+extern void vAssertCalled( unsigned long ulLine, const char * const pcFileName );
+#define configASSERT( x )                                                      \
+    if( ( x ) == 0 )                                                           \
+    {                                                                          \
+        vAssertCalled( __LINE__, __FILE__ );                                   \
+    }
 
 /* Set the following definitions to 1 to include the API function, or zero
 to exclude the API function. */

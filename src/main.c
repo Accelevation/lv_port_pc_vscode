@@ -51,7 +51,7 @@
  *   GLOBAL FUNCTIONS
  **********************/
 
-#if LV_USE_OS != LV_OS_FREERTOS
+#ifndef USE_FREERTOS
 
 int main(int argc, char **argv)
 {
