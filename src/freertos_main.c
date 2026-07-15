@@ -36,7 +36,7 @@ static void ui_task(void * pvParameters)
     (void)pvParameters;
 
     lv_init();
-    sdl_hal_init(800, 480);
+    sdl_hal_init(1024, 600);  // match the H757 production panel
     ui_init();
 
     for(;;) {
