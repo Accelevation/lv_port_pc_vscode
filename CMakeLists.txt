@@ -78,13 +78,21 @@ set(MAIN_SOURCES
     ${HMI_SHARED_UI_DIR}/assets/logo.c
     ${HMI_SHARED_UI_DIR}/navigation.cpp
     ${HMI_SHARED_UI_DIR}/runtime.cpp
+    ${HMI_SHARED_UI_DIR}/theme.cpp
     ${HMI_SHARED_UI_DIR}/ui.cpp
-    ${HMI_SHARED_UI_DIR}/views/main_view.cpp
-    ${HMI_SHARED_UI_DIR}/views/settings_view.cpp
+    ${HMI_SHARED_UI_DIR}/views/dashboard_view.cpp
+    ${HMI_SHARED_UI_DIR}/views/summary_view.cpp
+    ${HMI_SHARED_UI_DIR}/views/breakers_view.cpp
+    ${HMI_SHARED_UI_DIR}/views/telemetry_view.cpp
+    ${HMI_SHARED_UI_DIR}/views/config_view.cpp
+    ${HMI_SHARED_UI_DIR}/views/alarms_view.cpp
+    ${HMI_SHARED_UI_DIR}/widgets/action_button.cpp
+    ${HMI_SHARED_UI_DIR}/widgets/app_shell.cpp
     ${HMI_SHARED_UI_DIR}/widgets/icon_button.cpp
-    ${HMI_SHARED_UI_DIR}/widgets/nav_bar.cpp
+    ${HMI_SHARED_UI_DIR}/widgets/metric_box.cpp
+    ${HMI_SHARED_UI_DIR}/widgets/nav_item.cpp
+    ${HMI_SHARED_UI_DIR}/widgets/panel_card.cpp
     ${HMI_SHARED_UI_DIR}/widgets/screen.cpp
-    ${HMI_SHARED_UI_DIR}/widgets/section_card.cpp
 )
 set(MAIN_LIBS lvgl lvgl::examples lvgl::demos lvgl::thorvg ${SDL2_LIBRARIES})
 
