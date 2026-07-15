@@ -76,6 +76,7 @@ set(MAIN_SOURCES
     src/mouse_cursor_icon.c
     src/hal/hal.c
     ${HMI_SHARED_UI_DIR}/assets/logo.c
+    ${HMI_SHARED_UI_DIR}/assets/montserrat_bold_96.c
     ${HMI_SHARED_UI_DIR}/navigation.cpp
     ${HMI_SHARED_UI_DIR}/runtime.cpp
     ${HMI_SHARED_UI_DIR}/theme.cpp
