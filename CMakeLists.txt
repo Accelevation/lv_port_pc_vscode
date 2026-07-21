@@ -96,6 +96,7 @@ set(MAIN_SOURCES
     ${HMI_SHARED_UI_DIR}/widgets/metric_box.cpp
     ${HMI_SHARED_UI_DIR}/widgets/nav_item.cpp
     ${HMI_SHARED_UI_DIR}/widgets/panel_card.cpp
+    ${HMI_SHARED_UI_DIR}/widgets/primitives.cpp
     ${HMI_SHARED_UI_DIR}/widgets/screen.cpp
 )
 set(MAIN_LIBS lvgl lvgl::examples lvgl::demos lvgl::thorvg ${SDL2_LIBRARIES})
