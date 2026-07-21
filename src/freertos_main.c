@@ -67,20 +67,22 @@ static void dashboard_producer_task(void * pvParameters)
         (void)phase;
         ui_set_system(&sys);
 
-        /* Panels update more slowly (every ~1 s) to show store persistence on
-         * navigation-return, not just live refresh. */
-        if((tick % 4) == 0) {
+        /* Panels refresh on a slower cadence than the System stats (~2 s vs
+         * 250 ms) so per-domain update rates differ; load/voltage/health all
+         * wander so every panel value is visibly live. */
+        if((tick % 8) == 0) {
+            int beat = tick / 8;
             ui_panel_t panels[2];
             snprintf(panels[0].id, sizeof panels[0].id, "PANEL ALPHA-1");
             panels[0].is_master = 1;
             panels[0].healthy   = 1;
-            panels[0].load_amps = 240 + (tick % 20);
-            panels[0].voltage_v = 482.1f;
+            panels[0].load_amps = 240 + (beat % 20);
+            panels[0].voltage_v = 480.0f + (float)(beat % 40) / 10.0f;
             snprintf(panels[1].id, sizeof panels[1].id, "PANEL BRAVO-2");
             panels[1].is_master = 0;
-            panels[1].healthy   = ((tick / 4) % 6 != 0);  /* occasionally trips unhealthy */
-            panels[1].load_amps = 305 + (tick % 15);
-            panels[1].voltage_v = 479.4f;
+            panels[1].healthy   = (beat % 6 != 0);  /* occasionally trips unhealthy */
+            panels[1].load_amps = 305 + (beat % 15);
+            panels[1].voltage_v = 478.0f + (float)(beat % 30) / 10.0f;
             ui_set_panels(panels, 2);
         }
 
