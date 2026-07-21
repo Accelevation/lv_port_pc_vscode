@@ -5,9 +5,8 @@
  *   - UI task         — owns LVGL: lv_init() + sdl_hal_init() + ui_init(),
  *                       then loops drain-queue + lv_timer_handler.
  *                       LVGL is NOT thread-safe; only this task touches it.
- *   - Demo producer   — calls ui_set_demo_value() every 500 ms with an
- *                       incrementing counter. Validates the queue-based
- *                       setter plumbing.
+ *   - Dashboard producer — pushes wandering System/Panels snapshots via
+ *                       ui_set_system/ui_set_panels.
  */
 
 #ifdef USE_FREERTOS
@@ -18,6 +17,7 @@
 #include "lvgl/lvgl.h"
 #include "hal/hal.h"
 #include "ui.h"
+#include "ui_state.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,13 +48,44 @@ static void ui_task(void * pvParameters)
     }
 }
 
-static void demo_producer_task(void * pvParameters)
+/* Dashboard producer — fabricates wandering System + Panels snapshots so the
+ * live-data path is exercised end to end. This is a stand-in for a real CAN/
+ * RS485/Modbus producer; the UI is identical either way. */
+static void dashboard_producer_task(void * pvParameters)
 {
     (void)pvParameters;
-    int counter = 0;
+    int tick = 0;
     for(;;) {
-        ui_set_demo_value(counter++);
-        vTaskDelay(pdMS_TO_TICKS(DEMO_PERIOD_MS));
+        float phase = (float)tick * 0.10f;
+
+        ui_system_t sys;
+        sys.node_state     = UI_NODE_ONLINE;
+        sys.nodes_synced   = 1;
+        /* wander around the seed values with a cheap integer-driven ripple */
+        sys.global_load_kw = 82.4f + (float)((tick * 7) % 40) / 10.0f - 2.0f;   /* ~80.4–86.4 */
+        sys.efficiency_pct = 97.5f + (float)((tick * 3) % 20) / 10.0f;          /* ~97.5–99.5 */
+        (void)phase;
+        ui_set_system(&sys);
+
+        /* Panels update more slowly (every ~1 s) to show store persistence on
+         * navigation-return, not just live refresh. */
+        if((tick % 4) == 0) {
+            ui_panel_t panels[2];
+            snprintf(panels[0].id, sizeof panels[0].id, "PANEL ALPHA-1");
+            panels[0].is_master = 1;
+            panels[0].healthy   = 1;
+            panels[0].load_amps = 240 + (tick % 20);
+            panels[0].voltage_v = 482.1f;
+            snprintf(panels[1].id, sizeof panels[1].id, "PANEL BRAVO-2");
+            panels[1].is_master = 0;
+            panels[1].healthy   = ((tick / 4) % 6 != 0);  /* occasionally trips unhealthy */
+            panels[1].load_amps = 305 + (tick % 15);
+            panels[1].voltage_v = 479.4f;
+            ui_set_panels(panels, 2);
+        }
+
+        ++tick;
+        vTaskDelay(pdMS_TO_TICKS(250));
     }
 }
 
@@ -92,9 +123,9 @@ int main(int argc, char ** argv)
         return 1;
     }
 
-    if(xTaskCreate(demo_producer_task, "Demo", DEMO_TASK_STACK_WORDS,
+    if(xTaskCreate(dashboard_producer_task, "Dash", DEMO_TASK_STACK_WORDS,
                    NULL, DEMO_TASK_PRIORITY, NULL) != pdPASS) {
-        printf("Failed to create demo producer task\n");
+        printf("Failed to create dashboard producer task\n");
         return 1;
     }
 
