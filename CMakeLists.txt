@@ -170,6 +170,21 @@ if(LVGL_PRO_PROJECT_DIR)
 endif()
 
 add_executable(main ${MAIN_SOURCES})
+
+# --- Host unit test for the portable frame codec (no LVGL/SDL/RTOS) ---
+add_executable(test_codec
+    ${HMI_ROOT_DIR}/src/comms/frame_codec_v1.c
+    ${HMI_ROOT_DIR}/src/comms/comms.c
+    ${HMI_ROOT_DIR}/src/comms/test/test_frame_codec_v1.c
+)
+target_include_directories(test_codec PRIVATE
+    ${HMI_ROOT_DIR}/src/comms
+    ${HMI_SHARED_UI_DIR}
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_codec PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
 target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
 if(USE_FREERTOS)
     target_compile_definitions(main PRIVATE USE_FREERTOS=1)
