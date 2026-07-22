@@ -52,7 +52,7 @@ void socket_transport_task(void *pv)
         printf("socket: listening on 127.0.0.1:%d\n", SOCK_PORT);
 
         cli = accept(srv, NULL, NULL);
-        if (cli == INVALID_SOCKET) { closesocket(srv); continue; }
+        if (cli == INVALID_SOCKET) { closesocket(srv); vTaskDelay(pdMS_TO_TICKS(1000)); continue; }
         setsockopt(cli, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tmo, sizeof tmo);
         printf("socket: client connected\n");
 
