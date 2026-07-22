@@ -98,6 +98,8 @@ set(MAIN_SOURCES
     ${HMI_SHARED_UI_DIR}/widgets/panel_card.cpp
     ${HMI_SHARED_UI_DIR}/widgets/primitives.cpp
     ${HMI_SHARED_UI_DIR}/widgets/screen.cpp
+    ${HMI_ROOT_DIR}/src/comms/comms.c
+    ${HMI_ROOT_DIR}/src/comms/frame_codec_v1.c
 )
 set(MAIN_LIBS lvgl lvgl::examples lvgl::demos lvgl::thorvg ${SDL2_LIBRARIES})
 
@@ -189,7 +191,7 @@ target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
 if(USE_FREERTOS)
     target_compile_definitions(main PRIVATE USE_FREERTOS=1)
 endif()
-target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR})
+target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms)
 if(USE_FREERTOS)
     target_include_directories(main PRIVATE
         ${PROJECT_SOURCE_DIR}/FreeRTOS/include
