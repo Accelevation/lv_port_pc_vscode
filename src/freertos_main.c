@@ -19,6 +19,10 @@
 #include "ui.h"
 #include "ui_state.h"
 
+#ifdef PRODUCER_SOCKET
+extern void socket_transport_task(void *pv);
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -48,6 +52,7 @@ static void ui_task(void * pvParameters)
     }
 }
 
+#ifndef PRODUCER_SOCKET
 /* Dashboard producer — fabricates wandering System + Panels snapshots so the
  * live-data path is exercised end to end. This is a stand-in for a real CAN/
  * RS485/Modbus producer; the UI is identical either way. */
@@ -90,6 +95,7 @@ static void dashboard_producer_task(void * pvParameters)
         vTaskDelay(pdMS_TO_TICKS(250));
     }
 }
+#endif /* PRODUCER_SOCKET */
 
 void vApplicationMallocFailedHook(void)
 {
@@ -125,11 +131,19 @@ int main(int argc, char ** argv)
         return 1;
     }
 
+#ifdef PRODUCER_SOCKET
+    if(xTaskCreate(socket_transport_task, "Sock", 2048,
+                   NULL, DEMO_TASK_PRIORITY, NULL) != pdPASS) {
+        printf("Failed to create socket transport task\n");
+        return 1;
+    }
+#else
     if(xTaskCreate(dashboard_producer_task, "Dash", DEMO_TASK_STACK_WORDS,
                    NULL, DEMO_TASK_PRIORITY, NULL) != pdPASS) {
         printf("Failed to create dashboard producer task\n");
         return 1;
     }
+#endif
 
     vTaskStartScheduler();
 

@@ -12,6 +12,10 @@ set(LVGL_PRO_PROJECT_DIR
 # the legacy single-loop main() in src/main.c.
 option(USE_FREERTOS "Enable FreeRTOS" ON)
 
+# Sim data producer: "dummy" (internal wander task) or "socket" (TCP transport
+# on :5555 feeding the v1 codec). Default keeps zero-setup runs working.
+set(PRODUCER "dummy" CACHE STRING "Sim data producer: dummy | socket")
+
 if(USE_FREERTOS)
     message(STATUS "FreeRTOS is enabled (MSVC-MingW Windows simulator port)")
 
@@ -107,6 +111,10 @@ set(MAIN_LIBS lvgl lvgl::examples lvgl::demos lvgl::thorvg ${SDL2_LIBRARIES})
 # freertos_main.c on #ifdef USE_FREERTOS. CMake propagates the define below.
 list(APPEND MAIN_SOURCES src/main.c src/freertos_main.c)
 
+if(PRODUCER STREQUAL "socket")
+    list(APPEND MAIN_SOURCES src/socket_transport.c)
+endif()
+
 if(USE_FREERTOS)
     list(APPEND MAIN_SOURCES ${FREERTOS_SOURCES})
 endif()
@@ -191,6 +199,17 @@ target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
 if(USE_FREERTOS)
     target_compile_definitions(main PRIVATE USE_FREERTOS=1)
 endif()
+
+if(PRODUCER STREQUAL "socket")
+    target_compile_definitions(main PRIVATE PRODUCER_SOCKET=1)
+    message(STATUS "Sim producer: socket transport on :5555")
+    if(WIN32)
+        target_link_libraries(main ws2_32)
+    endif()
+else()
+    message(STATUS "Sim producer: internal dummy wander task")
+endif()
+
 target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms)
 if(USE_FREERTOS)
     target_include_directories(main PRIVATE
