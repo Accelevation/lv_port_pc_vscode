@@ -84,6 +84,7 @@ set(MAIN_SOURCES
     ${HMI_SHARED_UI_DIR}/navigation.cpp
     ${HMI_SHARED_UI_DIR}/runtime.cpp
     ${HMI_SHARED_UI_DIR}/theme.cpp
+    ${HMI_SHARED_UI_DIR}/ui_fmt.cpp
     ${HMI_SHARED_UI_DIR}/ui.cpp
     ${HMI_SHARED_UI_DIR}/views/dashboard_view.cpp
     ${HMI_SHARED_UI_DIR}/views/summary_view.cpp
@@ -207,6 +208,16 @@ target_include_directories(test_canbus PRIVATE
 )
 if (WIN32 AND MSVC)
     target_link_options(test_canbus PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
+# --- Host unit test for the shared UI formatting helpers (no LVGL/SDL/RTOS) ---
+add_executable(test_ui_fmt
+    ${HMI_SHARED_UI_DIR}/ui_fmt.cpp
+    ${HMI_SHARED_UI_DIR}/test/test_ui_fmt.cpp
+)
+target_include_directories(test_ui_fmt PRIVATE ${HMI_SHARED_UI_DIR})
+if (WIN32 AND MSVC)
+    target_link_options(test_ui_fmt PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
 target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
