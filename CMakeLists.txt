@@ -106,6 +106,7 @@ set(MAIN_SOURCES
     ${HMI_ROOT_DIR}/src/comms/comms.c
     ${HMI_ROOT_DIR}/src/comms/frame_codec_v1.c
     ${HMI_ROOT_DIR}/src/canbus/canbus.c
+    ${HMI_ROOT_DIR}/src/demo/demo_source.c
 )
 set(MAIN_LIBS lvgl lvgl::examples lvgl::demos lvgl::thorvg ${SDL2_LIBRARIES})
 
@@ -220,6 +221,19 @@ if (WIN32 AND MSVC)
     target_link_options(test_ui_fmt PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
+# --- Host unit test for the portable demo source (no LVGL/SDL/RTOS) ---
+add_executable(test_demo_source
+    ${HMI_ROOT_DIR}/src/demo/demo_source.c
+    ${HMI_ROOT_DIR}/src/demo/test/test_demo_source.c
+)
+target_include_directories(test_demo_source PRIVATE
+    ${HMI_ROOT_DIR}/src/demo
+    ${HMI_SHARED_UI_DIR}
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_demo_source PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
 target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
 if(USE_FREERTOS)
     target_compile_definitions(main PRIVATE USE_FREERTOS=1)
@@ -235,7 +249,7 @@ else()
     message(STATUS "Sim producer: internal dummy wander task")
 endif()
 
-target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/canbus)
+target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo)
 if(USE_FREERTOS)
     target_include_directories(main PRIVATE
         ${PROJECT_SOURCE_DIR}/FreeRTOS/include

@@ -18,6 +18,7 @@
 #include "hal/hal.h"
 #include "ui.h"
 #include "ui_state.h"
+#include "demo_source.h"
 
 #ifdef PRODUCER_SOCKET
 extern void socket_transport_task(void *pv);
@@ -53,45 +54,14 @@ static void ui_task(void * pvParameters)
 }
 
 #ifndef PRODUCER_SOCKET
-/* Dashboard producer — fabricates wandering System + Panels snapshots so the
- * live-data path is exercised end to end. This is a stand-in for a real CAN/
- * RS485/Modbus producer; the UI is identical either way. */
+/* Demo producer — drives every UI domain from the portable src/demo/ module.
+ * The fabrication logic lives there so the sim and both firmware targets share
+ * one copy; this task is just the platform's timing loop. */
 static void dashboard_producer_task(void * pvParameters)
 {
     (void)pvParameters;
-    int tick = 0;
     for(;;) {
-        float phase = (float)tick * 0.10f;
-
-        ui_system_t sys;
-        sys.node_state     = UI_NODE_ONLINE;
-        sys.nodes_synced   = 1;
-        /* wander around the seed values with a cheap integer-driven ripple */
-        sys.global_load_kw = 82.4f + (float)((tick * 7) % 40) / 10.0f - 2.0f;   /* ~80.4–86.4 */
-        sys.efficiency_pct = 97.5f + (float)((tick * 3) % 20) / 10.0f;          /* ~97.5–99.5 */
-        (void)phase;
-        ui_set_system(&sys);
-
-        /* Panels refresh on a slower cadence than the System stats (~2 s vs
-         * 250 ms) so per-domain update rates differ; load/voltage/health all
-         * wander so every panel value is visibly live. */
-        if((tick % 8) == 0) {
-            int beat = tick / 8;
-            ui_panel_t panels[2];
-            snprintf(panels[0].id, sizeof panels[0].id, "PANEL ALPHA-1");
-            panels[0].is_master = 1;
-            panels[0].healthy   = 1;
-            panels[0].load_amps = 240 + (beat % 20);
-            panels[0].voltage_v = 480.0f + (float)(beat % 40) / 10.0f;
-            snprintf(panels[1].id, sizeof panels[1].id, "PANEL BRAVO-2");
-            panels[1].is_master = 0;
-            panels[1].healthy   = (beat % 6 != 0);  /* occasionally trips unhealthy */
-            panels[1].load_amps = 305 + (beat % 15);
-            panels[1].voltage_v = 478.0f + (float)(beat % 30) / 10.0f;
-            ui_set_panels(panels, 2);
-        }
-
-        ++tick;
+        demo_source_tick(250);
         vTaskDelay(pdMS_TO_TICKS(250));
     }
 }
