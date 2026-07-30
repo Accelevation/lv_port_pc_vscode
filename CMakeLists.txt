@@ -234,6 +234,19 @@ if (WIN32 AND MSVC)
     target_link_options(test_demo_source PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
+# --- Host unit test for the portable settings store (no LVGL/SDL/RTOS) ---
+add_executable(test_settings
+    ${HMI_ROOT_DIR}/src/settings/settings.c
+    ${HMI_ROOT_DIR}/src/settings/test/fake_backend.c
+    ${HMI_ROOT_DIR}/src/settings/test/test_settings.c
+)
+target_include_directories(test_settings PRIVATE
+    ${HMI_ROOT_DIR}/src/settings
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_settings PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
 target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
 if(USE_FREERTOS)
     target_compile_definitions(main PRIVATE USE_FREERTOS=1)
