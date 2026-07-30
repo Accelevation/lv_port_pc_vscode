@@ -64,7 +64,6 @@ int settings_backend_erase(uint32_t off, uint32_t len)
  * The mutex is created once, from main() before the scheduler starts (see
  * settings_backend_mutex_create() and its call site in freertos_main.c) --
  * single-threaded at that point, so there is no create-vs-first-use race. */
-#ifdef USE_FREERTOS
 
 #include "FreeRTOS.h"
 #include "semphr.h"
@@ -85,14 +84,3 @@ void settings_unlock(void)
 {
     if (s_mtx) xSemaphoreGive(s_mtx);
 }
-
-#else /* !USE_FREERTOS */
-
-/* The non-FreeRTOS configuration compiles src/main.c (the legacy single-loop
- * path) instead of freertos_main.c: one thread, no writer task, so there is
- * nothing settings_set_network could race with. No-ops are correct here, not
- * just convenient. */
-void settings_lock(void)   { }
-void settings_unlock(void) { }
-
-#endif /* USE_FREERTOS */

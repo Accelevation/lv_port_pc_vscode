@@ -8,41 +8,35 @@ set(LVGL_PRO_PROJECT_DIR
     ""
     CACHE PATH "Path to LVGL Pro Project folder")
 
-# Default ON — Beat 1 wires LVGL onto a FreeRTOS task model. Flip OFF for
-# the legacy single-loop main() in src/main.c.
-option(USE_FREERTOS "Enable FreeRTOS" ON)
+# FreeRTOS is always built in — every target (sim, h745-hmi, h757-hmi) runs
+# the FreeRTOS two-task model, and src/ui/runtime.cpp is the RTOS bridge
+# layer, not a file that happens to use FreeRTOS.
+message(STATUS "FreeRTOS is enabled (MSVC-MingW Windows simulator port)")
 
 # Sim data producer: "dummy" (internal wander task) or "socket" (TCP transport
 # on :5555 feeding the v1 codec). Default keeps zero-setup runs working.
 set(PRODUCER "dummy" CACHE STRING "Sim data producer: dummy | socket")
 
-if(USE_FREERTOS)
-    message(STATUS "FreeRTOS is enabled (MSVC-MingW Windows simulator port)")
+# The vendored kernel ships both the GCC/POSIX port (uses pthreads + SIGALRM,
+# won't compile under MSVC) and the MSVC-MingW Windows simulator port. We use
+# the latter so the same sim builds under both MSVC and MinGW on Windows.
+set(FREERTOS_PORT_DIR "${PROJECT_SOURCE_DIR}/FreeRTOS/portable/MSVC-MingW")
 
-    # The vendored kernel ships both the GCC/POSIX port (uses pthreads + SIGALRM,
-    # won't compile under MSVC) and the MSVC-MingW Windows simulator port. We use
-    # the latter so the same sim builds under both MSVC and MinGW on Windows.
-    set(FREERTOS_PORT_DIR "${PROJECT_SOURCE_DIR}/FreeRTOS/portable/MSVC-MingW")
+include_directories(${PROJECT_SOURCE_DIR}/FreeRTOS/include)
+include_directories(${FREERTOS_PORT_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/config)
 
-    include_directories(${PROJECT_SOURCE_DIR}/FreeRTOS/include)
-    include_directories(${FREERTOS_PORT_DIR})
-    include_directories(${PROJECT_SOURCE_DIR}/config)
-
-    set(FREERTOS_SOURCES
-        ${PROJECT_SOURCE_DIR}/FreeRTOS/croutine.c
-        ${PROJECT_SOURCE_DIR}/FreeRTOS/event_groups.c
-        ${PROJECT_SOURCE_DIR}/FreeRTOS/list.c
-        ${PROJECT_SOURCE_DIR}/FreeRTOS/queue.c
-        ${PROJECT_SOURCE_DIR}/FreeRTOS/stream_buffer.c
-        ${PROJECT_SOURCE_DIR}/FreeRTOS/tasks.c
-        ${PROJECT_SOURCE_DIR}/FreeRTOS/timers.c
-        ${PROJECT_SOURCE_DIR}/FreeRTOS/portable/MemMang/heap_4.c
-        ${FREERTOS_PORT_DIR}/port.c
-    )
-else()
-    message(STATUS "FreeRTOS is disabled")
-    set(FREERTOS_SOURCES "")
-endif()
+set(FREERTOS_SOURCES
+    ${PROJECT_SOURCE_DIR}/FreeRTOS/croutine.c
+    ${PROJECT_SOURCE_DIR}/FreeRTOS/event_groups.c
+    ${PROJECT_SOURCE_DIR}/FreeRTOS/list.c
+    ${PROJECT_SOURCE_DIR}/FreeRTOS/queue.c
+    ${PROJECT_SOURCE_DIR}/FreeRTOS/stream_buffer.c
+    ${PROJECT_SOURCE_DIR}/FreeRTOS/tasks.c
+    ${PROJECT_SOURCE_DIR}/FreeRTOS/timers.c
+    ${PROJECT_SOURCE_DIR}/FreeRTOS/portable/MemMang/heap_4.c
+    ${FREERTOS_PORT_DIR}/port.c
+)
 
 # Main include files of the project
 include_directories(${PROJECT_SOURCE_DIR}/main/inc)
@@ -112,17 +106,13 @@ set(MAIN_SOURCES
 )
 set(MAIN_LIBS lvgl lvgl::examples lvgl::demos lvgl::thorvg ${SDL2_LIBRARIES})
 
-# Always include both entry points; main.c gates itself on #ifndef USE_FREERTOS,
-# freertos_main.c on #ifdef USE_FREERTOS. CMake propagates the define below.
-list(APPEND MAIN_SOURCES src/main.c src/freertos_main.c)
+list(APPEND MAIN_SOURCES src/freertos_main.c)
 
 if(PRODUCER STREQUAL "socket")
     list(APPEND MAIN_SOURCES src/socket_transport.c)
 endif()
 
-if(USE_FREERTOS)
-    list(APPEND MAIN_SOURCES ${FREERTOS_SOURCES})
-endif()
+list(APPEND MAIN_SOURCES ${FREERTOS_SOURCES})
 
 if(NOT MSVC)
     list(APPEND MAIN_LIBS m pthread)
@@ -250,9 +240,6 @@ if (WIN32 AND MSVC)
 endif()
 
 target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
-if(USE_FREERTOS)
-    target_compile_definitions(main PRIVATE USE_FREERTOS=1)
-endif()
 
 if(PRODUCER STREQUAL "socket")
     target_compile_definitions(main PRIVATE PRODUCER_SOCKET=1)
@@ -265,13 +252,11 @@ else()
 endif()
 
 target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo ${HMI_ROOT_DIR}/src/settings)
-if(USE_FREERTOS)
-    target_include_directories(main PRIVATE
-        ${PROJECT_SOURCE_DIR}/FreeRTOS/include
-        ${PROJECT_SOURCE_DIR}/FreeRTOS/portable/MSVC-MingW
-        ${PROJECT_SOURCE_DIR}/config
-    )
-endif()
+target_include_directories(main PRIVATE
+    ${PROJECT_SOURCE_DIR}/FreeRTOS/include
+    ${PROJECT_SOURCE_DIR}/FreeRTOS/portable/MSVC-MingW
+    ${PROJECT_SOURCE_DIR}/config
+)
 target_link_libraries(main ${MAIN_LIBS})
 
 # On Windows, GUI applications do not show a console by default,

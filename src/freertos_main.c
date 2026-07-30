@@ -9,8 +9,6 @@
  *                       ui_set_system/ui_set_panels.
  */
 
-#ifdef USE_FREERTOS
-
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -147,5 +145,3 @@ int main(int argc, char ** argv)
     printf("Scheduler returned\n");
     return 0;
 }
-
-#endif /* USE_FREERTOS */
