@@ -2,7 +2,7 @@
 
 [LVGL](https://github.com/lvgl/lvgl) is written mainly for microcontrollers and embedded systems, however you can run the library **on your PC** as well without any embedded hardware. The code written on PC can be simply copied when your are using an embedded system.
 
-This project is pre-configured for VSCode and should work work on Windows, Linux and MacOs as well. FreeRTOS is also included and can be optionally enabled to better simulate embedded system's behavior. 
+This project is pre-configured for VSCode and should work work on Windows, Linux and MacOs as well. FreeRTOS is also included; in this fork it is **always built in** (there is no build-time switch to disable it — see "Enable FreeRTOS" below).
 
 ## Get started
 
@@ -70,14 +70,22 @@ To correctly configure the project, the RTOS (Real-Time Operating System) requir
 This configuration ensures that the SDL window is displayed in a timely manner. If this value is reduced, it may cause significant delays in the SDL window's appearance. If the allocated heap memory is too small, the window may fail to appear altogether.
 Therefore, it is crucial to allocate sufficient heap memory to ensure smooth execution and debugging experience.
 
-### Enable FreeRTOS 
-To enable the rtos part of this project select in lv_conf.h `#define LV_USE_OS   LV_OS_NONE` to `#define LV_USE_OS  LV_OS_FREERTOS`
-Additionaly you have to enable the compilation of all FreeRTOS Files by turning on the `option(USE_FREERTOS "Enable FreeRTOS" OFF)` in the CMakeLists.txt file or
-by enabling the same flag from the command line when bootstrapping `cmake`:
+### Enable FreeRTOS
+**In this fork, FreeRTOS is always built in — there is nothing to enable.**
+`CMakeLists.txt` compiles the FreeRTOS sources and wires the include paths into
+the `main` target unconditionally (`USE_FREERTOS` is not a CMake option here),
+because `src/ui/runtime.cpp` — the shared UI's RTOS bridge layer — includes
+`FreeRTOS.h` unconditionally too. A previous `-DUSE_FREERTOS=OFF` escape hatch
+existed but never actually worked (the FreeRTOS include directories were only
+wired in under `if(USE_FREERTOS)`, so an OFF configuration failed to compile)
+and has been removed rather than left as a documented dead end (commit
+`7e3c390`, parent-repo pointer bump `c701217`).
 
-```bash
-cmake -B build -DUSE_FREERTOS=ON
-```
+If you're working from a fresh checkout of upstream `lv_port_pc_vscode` instead
+of this fork, that project's original instructions still apply: set
+`lv_conf.h`'s `#define LV_USE_OS LV_OS_NONE` to `LV_OS_FREERTOS`, and enable
+`option(USE_FREERTOS "Enable FreeRTOS" OFF)` in its `CMakeLists.txt` (or pass
+`-DUSE_FREERTOS=ON` to `cmake`) — that option doesn't exist in this fork.
 
 ### CMake
 
