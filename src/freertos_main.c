@@ -19,6 +19,12 @@
 #include "ui.h"
 #include "ui_state.h"
 #include "demo_source.h"
+#include "settings.h"
+
+/* Implemented in settings_backend_file.c. Must run before the scheduler
+ * starts (main() is still single-threaded there) so the mutex exists before
+ * any task's first settings_lock() call -- see that file's comment. */
+void settings_backend_mutex_create(void);
 
 #ifdef PRODUCER_SOCKET
 extern void socket_transport_task(void *pv);
@@ -42,6 +48,7 @@ static void ui_task(void * pvParameters)
 
     lv_init();
     sdl_hal_init(1024, 600);  // match the H757 production panel
+    settings_init();
     ui_init();
 
     for(;;) {
@@ -66,6 +73,19 @@ static void dashboard_producer_task(void * pvParameters)
     }
 }
 #endif /* PRODUCER_SOCKET */
+
+/* Commits dirty settings to storage off the UI task. Flash erases can take
+ * hundreds of milliseconds on real hardware; doing that on the UI task would
+ * freeze LVGL exactly as a modal closes. Polling is fine — settings change at
+ * human speed. */
+static void settings_writer_task(void *pvParameters)
+{
+    (void)pvParameters;
+    for(;;) {
+        vTaskDelay(pdMS_TO_TICKS(200));
+        settings_commit_if_dirty();
+    }
+}
 
 void vApplicationMallocFailedHook(void)
 {
@@ -94,6 +114,7 @@ int main(int argc, char ** argv)
     (void)argv;
 
     ui_runtime_init();
+    settings_backend_mutex_create();
 
     if(xTaskCreate(ui_task, "UI", UI_TASK_STACK_WORDS,
                    NULL, UI_TASK_PRIORITY, NULL) != pdPASS) {
@@ -114,6 +135,11 @@ int main(int argc, char ** argv)
         return 1;
     }
 #endif
+
+    if(xTaskCreate(settings_writer_task, "Set", 2048,
+                   NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+        return 1;
+    }
 
     vTaskStartScheduler();
 

@@ -79,6 +79,7 @@ target_include_directories(lvgl PUBLIC ${PROJECT_SOURCE_DIR} ${SDL2_INCLUDE_DIRS
 set(MAIN_SOURCES
     src/mouse_cursor_icon.c
     src/hal/hal.c
+    src/settings_backend_file.c
     ${HMI_SHARED_UI_DIR}/assets/logo.c
     ${HMI_SHARED_UI_DIR}/assets/montserrat_bold_96.c
     ${HMI_SHARED_UI_DIR}/navigation.cpp
@@ -107,6 +108,7 @@ set(MAIN_SOURCES
     ${HMI_ROOT_DIR}/src/comms/frame_codec_v1.c
     ${HMI_ROOT_DIR}/src/canbus/canbus.c
     ${HMI_ROOT_DIR}/src/demo/demo_source.c
+    ${HMI_ROOT_DIR}/src/settings/settings.c
 )
 set(MAIN_LIBS lvgl lvgl::examples lvgl::demos lvgl::thorvg ${SDL2_LIBRARIES})
 
@@ -262,7 +264,7 @@ else()
     message(STATUS "Sim producer: internal dummy wander task")
 endif()
 
-target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo)
+target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo ${HMI_ROOT_DIR}/src/settings)
 if(USE_FREERTOS)
     target_include_directories(main PRIVATE
         ${PROJECT_SOURCE_DIR}/FreeRTOS/include
