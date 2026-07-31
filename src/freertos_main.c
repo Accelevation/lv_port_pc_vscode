@@ -18,11 +18,13 @@
 #include "ui_state.h"
 #include "demo_source.h"
 #include "settings.h"
-
-/* Implemented in settings_backend_file.c. Must run before the scheduler
- * starts (main() is still single-threaded there) so the mutex exists before
- * any task's first settings_lock() call -- see that file's comment. */
-void settings_backend_mutex_create(void);
+/* settings_backend_mutex_create() is declared here rather than hand-forward-
+ * declared: three copies of that declaration had accumulated across this file
+ * and the two firmware main.c files, and a signature drift between them is a
+ * link-time-only failure. Implemented in settings_backend_file.c; must run
+ * before the scheduler starts (main() is still single-threaded there) so the
+ * mutex exists before any task's first settings_lock() call. */
+#include "settings_backend.h"
 
 #ifdef PRODUCER_SOCKET
 extern void socket_transport_task(void *pv);

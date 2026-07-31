@@ -32,7 +32,7 @@ static int flush(void)
 int settings_backend_read(uint32_t off, void *buf, uint32_t len)
 {
     load_once();
-    if (off + len > STORE_BYTES) return -1;
+    if (!settings_backend_range_ok(off, len, STORE_BYTES)) return -1;
     memcpy(buf, s_img + off, len);
     return 0;
 }
@@ -40,15 +40,21 @@ int settings_backend_read(uint32_t off, void *buf, uint32_t len)
 int settings_backend_write(uint32_t off, const void *buf, uint32_t len)
 {
     load_once();
-    if (off + len > STORE_BYTES) return -1;
+    if (!settings_backend_range_ok(off, len, STORE_BYTES)) return -1;
     memcpy(s_img + off, buf, len);
     return flush();
 }
 
+/* Contract (settings_backend.h): zero-length is a no-op, offset and length must
+ * be 4K-aligned. Enforced here even though a file has no subsectors, so all four
+ * backends reject the same inputs and the simulator can't accept something the
+ * H757's QSPI would refuse. */
 int settings_backend_erase(uint32_t off, uint32_t len)
 {
     load_once();
-    if (off + len > STORE_BYTES) return -1;
+    if (len == 0u) return 0;
+    if (!settings_backend_range_ok(off, len, STORE_BYTES)) return -1;
+    if ((off & 0xFFFu) != 0u || (len & 0xFFFu) != 0u) return -1;
     memset(s_img + off, 0xFF, len);
     return flush();
 }
