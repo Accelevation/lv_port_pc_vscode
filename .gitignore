@@ -3,6 +3,9 @@ build/
 build-*/
 bin/
 
+# Settings store written by the running simulator (src/settings_backend_file.c)
+settings.bin
+
 # Ignore all dot folders, with below exceptions
 .*/
 
