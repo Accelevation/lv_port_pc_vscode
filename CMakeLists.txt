@@ -218,7 +218,7 @@ add_executable(test_ui_fmt
     ${HMI_SHARED_UI_DIR}/ui_fmt.cpp
     ${HMI_SHARED_UI_DIR}/test/test_ui_fmt.cpp
 )
-target_include_directories(test_ui_fmt PRIVATE ${HMI_SHARED_UI_DIR})
+target_include_directories(test_ui_fmt PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/tags)
 if (WIN32 AND MSVC)
     target_link_options(test_ui_fmt PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
