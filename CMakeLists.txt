@@ -239,6 +239,16 @@ if (WIN32 AND MSVC)
     target_link_options(test_settings PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
+# --- Host unit test for the portable transport registry (no LVGL/SDL/RTOS) ---
+add_executable(test_transport
+    ${HMI_ROOT_DIR}/src/transport/transport.c
+    ${HMI_ROOT_DIR}/src/transport/test/test_transport.c
+)
+target_include_directories(test_transport PRIVATE ${HMI_ROOT_DIR}/src/transport)
+if (WIN32 AND MSVC)
+    target_link_options(test_transport PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
 target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
 
 if(PRODUCER STREQUAL "socket")
