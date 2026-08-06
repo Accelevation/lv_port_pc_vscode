@@ -227,9 +227,13 @@ endif()
 add_executable(test_demo_source
     ${HMI_ROOT_DIR}/src/demo/demo_source.c
     ${HMI_ROOT_DIR}/src/demo/test/test_demo_source.c
+    ${HMI_ROOT_DIR}/src/tags/tags.c
+    ${HMI_ROOT_DIR}/src/tags/tag_desc.c
+    ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
 )
 target_include_directories(test_demo_source PRIVATE
     ${HMI_ROOT_DIR}/src/demo
+    ${HMI_ROOT_DIR}/src/tags
     ${HMI_SHARED_UI_DIR}
 )
 if (WIN32 AND MSVC)

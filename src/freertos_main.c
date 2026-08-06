@@ -119,9 +119,15 @@ int main(int argc, char ** argv)
     (void)argc;
     (void)argv;
 
-    ui_runtime_init();
+    /* Mutexes FIRST. ui_runtime_init() resets the point table, which takes
+     * tags_lock() -- and tags_port_sim.c deliberately asserts on a missing
+     * mutex rather than degrading to no locking, so the old order (runtime
+     * before create) trapped at startup the moment the runtime started
+     * touching the table. Still single-threaded here, so creating both up
+     * front is free. */
     settings_backend_mutex_create();
     tags_port_mutex_create();
+    ui_runtime_init();
 
     if(xTaskCreate(ui_task, "UI", UI_TASK_STACK_WORDS,
                    NULL, UI_TASK_PRIORITY, NULL) != pdPASS) {
