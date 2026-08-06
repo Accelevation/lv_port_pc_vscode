@@ -104,6 +104,9 @@ set(MAIN_SOURCES
     ${HMI_ROOT_DIR}/src/demo/demo_source.c
     ${HMI_ROOT_DIR}/src/settings/settings.c
     ${HMI_ROOT_DIR}/src/transport/transport.c
+    ${HMI_ROOT_DIR}/src/tags/tags.c
+    ${HMI_ROOT_DIR}/src/tags/tag_desc.c
+    ${HMI_ROOT_DIR}/src/tags/tags_port_sim.c
 )
 set(MAIN_LIBS lvgl lvgl::examples lvgl::demos lvgl::thorvg ${SDL2_LIBRARIES})
 
@@ -182,10 +185,13 @@ add_executable(test_codec
     ${HMI_ROOT_DIR}/src/comms/frame_codec_v1.c
     ${HMI_ROOT_DIR}/src/comms/comms.c
     ${HMI_ROOT_DIR}/src/comms/test/test_frame_codec_v1.c
+    ${HMI_ROOT_DIR}/src/tags/tags.c
+    ${HMI_ROOT_DIR}/src/tags/tag_desc.c
+    ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
 )
 target_include_directories(test_codec PRIVATE
     ${HMI_ROOT_DIR}/src/comms
-    ${HMI_SHARED_UI_DIR}
+    ${HMI_ROOT_DIR}/src/tags
 )
 if (WIN32 AND MSVC)
     target_link_options(test_codec PRIVATE "/SUBSYSTEM:CONSOLE")
@@ -278,7 +284,7 @@ else()
     message(STATUS "Sim producer: internal dummy wander task")
 endif()
 
-target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo ${HMI_ROOT_DIR}/src/settings ${HMI_ROOT_DIR}/src/transport)
+target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo ${HMI_ROOT_DIR}/src/settings ${HMI_ROOT_DIR}/src/transport ${HMI_ROOT_DIR}/src/tags)
 target_include_directories(main PRIVATE
     ${PROJECT_SOURCE_DIR}/FreeRTOS/include
     ${PROJECT_SOURCE_DIR}/FreeRTOS/portable/MSVC-MingW

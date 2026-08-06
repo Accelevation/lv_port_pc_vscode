@@ -25,6 +25,12 @@
  * before the scheduler starts (main() is still single-threaded there) so the
  * mutex exists before any task's first settings_lock() call. */
 #include "settings_backend.h"
+/* tags_port_mutex_create() -- same reasoning, mirrored for the point table's
+ * lock. Implemented in tags_port_sim.c; must also run before the scheduler
+ * starts so the mutex exists before any task's first tags_lock() call (the
+ * decoder tasks that will call tags_publish() run from the very first
+ * scheduler tick). */
+#include "tags_port.h"
 
 #ifdef PRODUCER_SOCKET
 extern void socket_transport_task(void *pv);
@@ -115,6 +121,7 @@ int main(int argc, char ** argv)
 
     ui_runtime_init();
     settings_backend_mutex_create();
+    tags_port_mutex_create();
 
     if(xTaskCreate(ui_task, "UI", UI_TASK_STACK_WORDS,
                    NULL, UI_TASK_PRIORITY, NULL) != pdPASS) {
