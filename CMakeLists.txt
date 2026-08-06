@@ -239,6 +239,19 @@ if (WIN32 AND MSVC)
     target_link_options(test_settings PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
+# --- Host unit test for the portable point table (no LVGL/SDL/RTOS) ---
+add_executable(test_tags
+    ${HMI_ROOT_DIR}/src/tags/tags.c
+    ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
+    ${HMI_ROOT_DIR}/src/tags/test/test_tags.c
+)
+target_include_directories(test_tags PRIVATE
+    ${HMI_ROOT_DIR}/src/tags
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_tags PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
 # --- Host unit test for the portable transport registry (no LVGL/SDL/RTOS) ---
 add_executable(test_transport
     ${HMI_ROOT_DIR}/src/transport/transport.c
