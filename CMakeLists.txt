@@ -201,10 +201,13 @@ endif()
 add_executable(test_canbus
     ${HMI_ROOT_DIR}/src/canbus/canbus.c
     ${HMI_ROOT_DIR}/src/canbus/test/test_canbus.c
+    ${HMI_ROOT_DIR}/src/tags/tags.c
+    ${HMI_ROOT_DIR}/src/tags/tag_desc.c
+    ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
 )
 target_include_directories(test_canbus PRIVATE
     ${HMI_ROOT_DIR}/src/canbus
-    ${HMI_SHARED_UI_DIR}
+    ${HMI_ROOT_DIR}/src/tags
 )
 if (WIN32 AND MSVC)
     target_link_options(test_canbus PRIVATE "/SUBSYSTEM:CONSOLE")
@@ -260,6 +263,25 @@ target_include_directories(test_tags PRIVATE
 )
 if (WIN32 AND MSVC)
     target_link_options(test_tags PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
+# --- Cross-protocol equivalence: RS485 and CAN must agree (no LVGL/SDL/RTOS) ---
+add_executable(test_tags_equivalence
+    ${HMI_ROOT_DIR}/src/tags/tags.c
+    ${HMI_ROOT_DIR}/src/tags/tag_desc.c
+    ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
+    ${HMI_ROOT_DIR}/src/comms/frame_codec_v1.c
+    ${HMI_ROOT_DIR}/src/comms/comms.c
+    ${HMI_ROOT_DIR}/src/canbus/canbus.c
+    ${HMI_ROOT_DIR}/src/tags/test/test_tags_equivalence.c
+)
+target_include_directories(test_tags_equivalence PRIVATE
+    ${HMI_ROOT_DIR}/src/tags
+    ${HMI_ROOT_DIR}/src/comms
+    ${HMI_ROOT_DIR}/src/canbus
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_tags_equivalence PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
 # --- Host unit test for the portable transport registry (no LVGL/SDL/RTOS) ---
