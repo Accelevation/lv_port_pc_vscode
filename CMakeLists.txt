@@ -91,6 +91,7 @@ set(MAIN_SOURCES
     ${HMI_SHARED_UI_DIR}/views/clock_dialog.cpp
     ${HMI_SHARED_UI_DIR}/widgets/action_button.cpp
     ${HMI_SHARED_UI_DIR}/widgets/app_shell.cpp
+    ${HMI_SHARED_UI_DIR}/widgets/link_banner.cpp
     ${HMI_SHARED_UI_DIR}/widgets/dialog.cpp
     ${HMI_SHARED_UI_DIR}/widgets/icon_button.cpp
     ${HMI_SHARED_UI_DIR}/widgets/metric_box.cpp
