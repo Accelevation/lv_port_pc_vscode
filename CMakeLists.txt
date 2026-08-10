@@ -88,6 +88,7 @@ set(MAIN_SOURCES
     ${HMI_SHARED_UI_DIR}/views/config_view.cpp
     ${HMI_SHARED_UI_DIR}/views/alarms_view.cpp
     ${HMI_SHARED_UI_DIR}/views/network_settings_dialog.cpp
+    ${HMI_SHARED_UI_DIR}/views/interface_dialog.cpp
     ${HMI_SHARED_UI_DIR}/views/clock_dialog.cpp
     ${HMI_SHARED_UI_DIR}/widgets/action_button.cpp
     ${HMI_SHARED_UI_DIR}/widgets/app_shell.cpp

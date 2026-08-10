@@ -18,6 +18,7 @@
 #include "ui_state.h"
 #include "demo_source.h"
 #include "settings.h"
+#include "transport.h"
 /* settings_backend_mutex_create() is declared here rather than hand-forward-
  * declared: three copies of that declaration had accumulated across this file
  * and the two firmware main.c files, and a signature drift between them is a
@@ -39,6 +40,16 @@ extern void socket_transport_task(void *pv);
 #include <stdio.h>
 #include <stdlib.h>
 
+/* Platform seam declared in ui.h (src/ui/), implemented once per platform.
+ * The sim has no board to restart -- exit(0) is its stand-in for a reset, and
+ * matches Task 16's bench expectation ("the sim exits"). Never returns. */
+void platform_request_reset(void)
+{
+    printf("[PLATFORM] reset requested -- exiting (sim stand-in for a reboot)\n");
+    fflush(stdout);
+    exit(0);
+}
+
 #define UI_TASK_STACK_WORDS         8192
 #define UI_TASK_PRIORITY            ( tskIDLE_PRIORITY + 2 )
 
@@ -55,6 +66,24 @@ static void ui_task(void * pvParameters)
     lv_init();
     sdl_hal_init(1024, 600);  // match the H757 production panel
     settings_init();
+
+    /* Seed the registry from the persisted selection, mirroring
+     * firmware/h757-hmi/CM7/Core/Src/main.c. Without this the config screen's
+     * INTERFACE row read transport_active_name() -- which stays pinned at
+     * TRANSPORT_DEFAULT forever on this platform -- regardless of what an
+     * operator actually saved, since nothing here ever called
+     * transport_set_active(). The sim has no real transport hardware to start
+     * (dashboard_producer_task/socket_transport_task are the only data
+     * sources, selected at build time, not by this registry), so this only
+     * makes the displayed selection truthful -- it does not activate anything.
+     * A settings blob rejected by settings_validate_interface() leaves the
+     * defaults in place, so `active` is always a valid transport_id_t here. */
+    {
+        settings_interface_t iface;
+        settings_get_interface(&iface);
+        transport_set_active((transport_id_t)iface.active);
+    }
+
     ui_init();
 
     for(;;) {
