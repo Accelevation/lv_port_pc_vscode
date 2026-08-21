@@ -215,6 +215,26 @@ if (WIN32 AND MSVC)
     target_link_options(test_canbus PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
+# --- Host unit test for the portable waveform module (no LVGL/SDL/RTOS) ---
+add_executable(test_waveform
+    ${HMI_ROOT_DIR}/src/waveform/waveform.c
+    ${HMI_ROOT_DIR}/src/waveform/waveform_frames.c
+    ${HMI_ROOT_DIR}/src/waveform/test/test_waveform.c
+    ${HMI_ROOT_DIR}/src/comms/frame_codec_v1.c
+    ${HMI_ROOT_DIR}/src/comms/comms.c
+    ${HMI_ROOT_DIR}/src/tags/tags.c
+    ${HMI_ROOT_DIR}/src/tags/tag_desc.c
+    ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
+)
+target_include_directories(test_waveform PRIVATE
+    ${HMI_ROOT_DIR}/src/waveform
+    ${HMI_ROOT_DIR}/src/comms
+    ${HMI_ROOT_DIR}/src/tags
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_waveform PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
 # --- Host unit test for the shared UI formatting helpers (no LVGL/SDL/RTOS) ---
 add_executable(test_ui_fmt
     ${HMI_SHARED_UI_DIR}/ui_fmt.cpp
