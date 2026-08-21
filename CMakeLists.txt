@@ -85,6 +85,7 @@ set(MAIN_SOURCES
     ${HMI_SHARED_UI_DIR}/views/summary_view.cpp
     ${HMI_SHARED_UI_DIR}/views/breakers_view.cpp
     ${HMI_SHARED_UI_DIR}/views/telemetry_view.cpp
+    ${HMI_SHARED_UI_DIR}/views/waveform_view.cpp
     ${HMI_SHARED_UI_DIR}/views/config_view.cpp
     ${HMI_SHARED_UI_DIR}/views/alarms_view.cpp
     ${HMI_SHARED_UI_DIR}/views/network_settings_dialog.cpp
