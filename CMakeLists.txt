@@ -102,6 +102,8 @@ set(MAIN_SOURCES
     ${HMI_SHARED_UI_DIR}/widgets/screen.cpp
     ${HMI_ROOT_DIR}/src/comms/comms.c
     ${HMI_ROOT_DIR}/src/comms/frame_codec_v1.c
+    ${HMI_ROOT_DIR}/src/waveform/waveform.c
+    ${HMI_ROOT_DIR}/src/waveform/waveform_frames.c
     ${HMI_ROOT_DIR}/src/canbus/canbus.c
     ${HMI_ROOT_DIR}/src/demo/demo_source.c
     ${HMI_ROOT_DIR}/src/settings/settings.c
@@ -187,12 +189,15 @@ add_executable(test_codec
     ${HMI_ROOT_DIR}/src/comms/frame_codec_v1.c
     ${HMI_ROOT_DIR}/src/comms/comms.c
     ${HMI_ROOT_DIR}/src/comms/test/test_frame_codec_v1.c
+    ${HMI_ROOT_DIR}/src/waveform/waveform.c
+    ${HMI_ROOT_DIR}/src/waveform/waveform_frames.c
     ${HMI_ROOT_DIR}/src/tags/tags.c
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
 )
 target_include_directories(test_codec PRIVATE
     ${HMI_ROOT_DIR}/src/comms
+    ${HMI_ROOT_DIR}/src/waveform
     ${HMI_ROOT_DIR}/src/tags
 )
 if (WIN32 AND MSVC)
@@ -298,12 +303,15 @@ add_executable(test_tags_equivalence
     ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
     ${HMI_ROOT_DIR}/src/comms/frame_codec_v1.c
     ${HMI_ROOT_DIR}/src/comms/comms.c
+    ${HMI_ROOT_DIR}/src/waveform/waveform.c
+    ${HMI_ROOT_DIR}/src/waveform/waveform_frames.c
     ${HMI_ROOT_DIR}/src/canbus/canbus.c
     ${HMI_ROOT_DIR}/src/tags/test/test_tags_equivalence.c
 )
 target_include_directories(test_tags_equivalence PRIVATE
     ${HMI_ROOT_DIR}/src/tags
     ${HMI_ROOT_DIR}/src/comms
+    ${HMI_ROOT_DIR}/src/waveform
     ${HMI_ROOT_DIR}/src/canbus
 )
 if (WIN32 AND MSVC)
@@ -332,7 +340,7 @@ else()
     message(STATUS "Sim producer: internal dummy wander task")
 endif()
 
-target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo ${HMI_ROOT_DIR}/src/settings ${HMI_ROOT_DIR}/src/transport ${HMI_ROOT_DIR}/src/tags)
+target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/waveform ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo ${HMI_ROOT_DIR}/src/settings ${HMI_ROOT_DIR}/src/transport ${HMI_ROOT_DIR}/src/tags)
 target_include_directories(main PRIVATE
     ${PROJECT_SOURCE_DIR}/FreeRTOS/include
     ${PROJECT_SOURCE_DIR}/FreeRTOS/portable/MSVC-MingW
