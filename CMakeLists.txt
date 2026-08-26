@@ -105,6 +105,7 @@ set(MAIN_SOURCES
     ${HMI_ROOT_DIR}/src/comms/frame_codec_v1.c
     ${HMI_ROOT_DIR}/src/waveform/waveform.c
     ${HMI_ROOT_DIR}/src/waveform/waveform_frames.c
+    ${HMI_ROOT_DIR}/src/waveform/waveform_can.c
     ${HMI_ROOT_DIR}/src/canbus/canbus.c
     ${HMI_ROOT_DIR}/src/demo/demo_source.c
     ${HMI_ROOT_DIR}/src/settings/settings.c
@@ -212,10 +213,13 @@ add_executable(test_canbus
     ${HMI_ROOT_DIR}/src/tags/tags.c
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
+    ${HMI_ROOT_DIR}/src/waveform/waveform.c
+    ${HMI_ROOT_DIR}/src/waveform/waveform_can.c
 )
 target_include_directories(test_canbus PRIVATE
     ${HMI_ROOT_DIR}/src/canbus
     ${HMI_ROOT_DIR}/src/tags
+    ${HMI_ROOT_DIR}/src/waveform
 )
 if (WIN32 AND MSVC)
     target_link_options(test_canbus PRIVATE "/SUBSYSTEM:CONSOLE")
@@ -225,6 +229,7 @@ endif()
 add_executable(test_waveform
     ${HMI_ROOT_DIR}/src/waveform/waveform.c
     ${HMI_ROOT_DIR}/src/waveform/waveform_frames.c
+    ${HMI_ROOT_DIR}/src/waveform/waveform_can.c
     ${HMI_ROOT_DIR}/src/waveform/test/test_waveform.c
     ${HMI_ROOT_DIR}/src/comms/frame_codec_v1.c
     ${HMI_ROOT_DIR}/src/comms/comms.c
@@ -309,6 +314,7 @@ add_executable(test_tags_equivalence
     ${HMI_ROOT_DIR}/src/comms/comms.c
     ${HMI_ROOT_DIR}/src/waveform/waveform.c
     ${HMI_ROOT_DIR}/src/waveform/waveform_frames.c
+    ${HMI_ROOT_DIR}/src/waveform/waveform_can.c
     ${HMI_ROOT_DIR}/src/canbus/canbus.c
     ${HMI_ROOT_DIR}/src/tags/test/test_tags_equivalence.c
 )
