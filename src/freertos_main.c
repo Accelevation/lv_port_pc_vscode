@@ -86,8 +86,38 @@ static void ui_task(void * pvParameters)
 
     ui_init();
 
+    uint32_t perf_log_ms = 0;
+
     for(;;) {
         uint32_t sleep_ms = ui_runtime_tick();
+
+        /* Mirror of the H757 console's 5 s "UI split:" line (main.c), so the
+         * same numbers can be read here without a flash cycle. #52. */
+        {
+            uint32_t now = lv_tick_get();
+            if(now - perf_log_ms >= 5000u) {
+                uint32_t v_last = 0, v_max = 0, l_last = 0, l_max = 0;
+                ui_inval_stats_t iv;
+                ui_runtime_tick_split(&v_last, &v_max, &l_last, &l_max);
+                ui_runtime_inval_stats(&iv);
+                printf("UI split: view_last=%lu view_max=%lu lvgl_last=%lu lvgl_max=%lu (ms)\n",
+                       (unsigned long)v_last, (unsigned long)v_max,
+                       (unsigned long)l_last, (unsigned long)l_max);
+                printf("UI inval: ticks=%lu dirty=%lu areas=%lu px=%lu px_peak=%lu "
+                       "big=(%ld,%ld)-(%ld,%ld) %ldx%ld\n",
+                       (unsigned long)iv.ticks, (unsigned long)iv.ticks_dirty,
+                       (unsigned long)iv.areas, (unsigned long)iv.px_total,
+                       (unsigned long)iv.px_peak,
+                       (long)iv.big_x1, (long)iv.big_y1, (long)iv.big_x2, (long)iv.big_y2,
+                       (long)(iv.big_x2 - iv.big_x1 + 1), (long)(iv.big_y2 - iv.big_y1 + 1));
+                printf("UI cost:  lvgl_ms=%lu peak=%lu mean_dirty=%lu (ms)\n",
+                       (unsigned long)iv.lvgl_ms_total, (unsigned long)iv.lvgl_ms_peak,
+                       (unsigned long)(iv.ticks_dirty ? iv.lvgl_ms_total / iv.ticks_dirty : 0));
+                fflush(stdout);
+                perf_log_ms = now;
+            }
+        }
+
         if(sleep_ms == 0) {
             sleep_ms = UI_FALLBACK_TICK_MS;
         }
