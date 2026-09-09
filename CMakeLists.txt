@@ -75,6 +75,8 @@ set(MAIN_SOURCES
     src/hal/hal.c
     src/settings_backend_file.c
     ${HMI_SHARED_UI_DIR}/assets/logo.c
+    ${HMI_SHARED_UI_DIR}/assets/montserrat_40.c
+    ${HMI_SHARED_UI_DIR}/assets/montserrat_48.c
     ${HMI_SHARED_UI_DIR}/assets/montserrat_bold_96.c
     ${HMI_SHARED_UI_DIR}/navigation.cpp
     ${HMI_SHARED_UI_DIR}/runtime.cpp
