@@ -66,6 +66,16 @@ add_compile_definitions($<$<BOOL:${LV_USE_LIBPNG}>:LV_USE_LIBPNG=1>)
 add_compile_definitions($<$<BOOL:${LV_USE_LIBJPEG_TURBO}>:LV_USE_LIBJPEG_TURBO=1>)
 add_compile_definitions($<$<BOOL:${LV_USE_FFMPEG}>:LV_USE_FFMPEG=1>)
 
+# LVGL's own examples and demos are not built. They exercise widgets this
+# UI has disabled in lv_conf.h (chart_2 pulls in lv_scale, etc.), so with a
+# trimmed config they fail to compile -- and nothing here links them: the
+# simulator runs our ui_init(), not lv_demo_*. Both firmware targets already
+# exclude lvgl/examples and lvgl/demos, so switching them off here is what
+# makes the three builds agree. FORCE because option() will not overwrite a
+# value already in an existing build-dir cache.
+set(CONFIG_LV_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CONFIG_LV_BUILD_DEMOS    OFF CACHE BOOL "" FORCE)
+
 # Add LVGL subdirectory
 add_subdirectory(lvgl)
 target_include_directories(lvgl PUBLIC ${PROJECT_SOURCE_DIR} ${SDL2_INCLUDE_DIRS})
@@ -116,7 +126,7 @@ set(MAIN_SOURCES
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/tags_port_sim.c
 )
-set(MAIN_LIBS lvgl lvgl::examples lvgl::demos lvgl::thorvg ${SDL2_LIBRARIES})
+set(MAIN_LIBS lvgl lvgl::thorvg ${SDL2_LIBRARIES})
 
 list(APPEND MAIN_SOURCES src/freertos_main.c)
 
