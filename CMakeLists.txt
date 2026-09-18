@@ -129,6 +129,7 @@ set(MAIN_SOURCES
     ${HMI_ROOT_DIR}/src/tags/tags.c
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/tags_port_sim.c
+    ${HMI_ROOT_DIR}/src/bcms/topology.c
 )
 set(MAIN_LIBS lvgl lvgl::thorvg ${SDL2_LIBRARIES})
 
@@ -372,6 +373,22 @@ if (WIN32 AND MSVC)
     target_link_options(test_modbus PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
+# --- Host unit test for the Cortex topology derivation (no LVGL/SDL/RTOS) ---
+add_executable(test_topology
+    ${HMI_ROOT_DIR}/src/bcms/topology.c
+    ${HMI_ROOT_DIR}/src/bcms/test/test_topology.c
+    ${HMI_ROOT_DIR}/src/tags/tags.c
+    ${HMI_ROOT_DIR}/src/tags/tag_desc.c
+    ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
+)
+target_include_directories(test_topology PRIVATE
+    ${HMI_ROOT_DIR}/src/bcms
+    ${HMI_ROOT_DIR}/src/tags
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_topology PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
 target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
 
 if(PRODUCER STREQUAL "socket")
@@ -384,7 +401,7 @@ else()
     message(STATUS "Sim producer: internal dummy wander task")
 endif()
 
-target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/waveform ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo ${HMI_ROOT_DIR}/src/settings ${HMI_ROOT_DIR}/src/transport ${HMI_ROOT_DIR}/src/modbus ${HMI_ROOT_DIR}/src/tags)
+target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/waveform ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo ${HMI_ROOT_DIR}/src/settings ${HMI_ROOT_DIR}/src/transport ${HMI_ROOT_DIR}/src/modbus ${HMI_ROOT_DIR}/src/tags ${HMI_ROOT_DIR}/src/bcms)
 target_include_directories(main PRIVATE
     ${PROJECT_SOURCE_DIR}/FreeRTOS/include
     ${PROJECT_SOURCE_DIR}/FreeRTOS/portable/MSVC-MingW
