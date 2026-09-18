@@ -92,6 +92,7 @@ set(MAIN_SOURCES
     ${HMI_SHARED_UI_DIR}/runtime.cpp
     ${HMI_SHARED_UI_DIR}/theme.cpp
     ${HMI_SHARED_UI_DIR}/ui_fmt.cpp
+    ${HMI_SHARED_UI_DIR}/breakers_model.cpp
     ${HMI_SHARED_UI_DIR}/ui.cpp
     ${HMI_SHARED_UI_DIR}/views/dashboard_view.cpp
     ${HMI_SHARED_UI_DIR}/views/summary_view.cpp
@@ -278,6 +279,27 @@ add_executable(test_ui_fmt
 target_include_directories(test_ui_fmt PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/tags)
 if (WIN32 AND MSVC)
     target_link_options(test_ui_fmt PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
+# --- Host unit test for the breakers-screen model (no LVGL/SDL/RTOS) ---
+add_executable(test_breakers_model
+    ${HMI_SHARED_UI_DIR}/breakers_model.cpp
+    ${HMI_SHARED_UI_DIR}/ui_fmt.cpp
+    ${HMI_SHARED_UI_DIR}/test/test_breakers_model.cpp
+    ${HMI_ROOT_DIR}/src/bcms/topology.c
+    ${HMI_ROOT_DIR}/src/transport/transport.c
+    ${HMI_ROOT_DIR}/src/tags/tags.c
+    ${HMI_ROOT_DIR}/src/tags/tag_desc.c
+    ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
+)
+target_include_directories(test_breakers_model PRIVATE
+    ${HMI_SHARED_UI_DIR}
+    ${HMI_ROOT_DIR}/src/bcms
+    ${HMI_ROOT_DIR}/src/transport
+    ${HMI_ROOT_DIR}/src/tags
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_breakers_model PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
 # --- Host unit test for the portable demo source (no LVGL/SDL/RTOS) ---
