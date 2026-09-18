@@ -13,9 +13,11 @@ set(LVGL_PRO_PROJECT_DIR
 # layer, not a file that happens to use FreeRTOS.
 message(STATUS "FreeRTOS is enabled (MSVC-MingW Windows simulator port)")
 
-# Sim data producer: "dummy" (internal wander task) or "socket" (TCP transport
-# on :5555 feeding the v1 codec). Default keeps zero-setup runs working.
-set(PRODUCER "dummy" CACHE STRING "Sim data producer: dummy | socket")
+# Sim data producer: "dummy" (internal wander task), "socket" (TCP transport
+# on :5555 feeding the v1 codec), or "modbus" (link-agnostic Cortex poller
+# over a Winsock TCP link to the emulator or the live Cortex, HMI_MODBUS_HOST/
+# HMI_MODBUS_PORT, design 6.3). Default keeps zero-setup runs working.
+set(PRODUCER "dummy" CACHE STRING "Sim data producer: dummy | socket | modbus")
 
 # The vendored kernel ships both the GCC/POSIX port (uses pthreads + SIGALRM,
 # won't compile under MSVC) and the MSVC-MingW Windows simulator port. We use
@@ -139,6 +141,10 @@ list(APPEND MAIN_SOURCES src/freertos_main.c)
 
 if(PRODUCER STREQUAL "socket")
     list(APPEND MAIN_SOURCES src/socket_transport.c)
+elseif(PRODUCER STREQUAL "modbus")
+    list(APPEND MAIN_SOURCES
+        src/modbus_tcp_link.c
+        ${HMI_ROOT_DIR}/src/modbus/modbus_poller.c)
 endif()
 
 list(APPEND MAIN_SOURCES ${FREERTOS_SOURCES})
@@ -456,6 +462,12 @@ target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
 if(PRODUCER STREQUAL "socket")
     target_compile_definitions(main PRIVATE PRODUCER_SOCKET=1)
     message(STATUS "Sim producer: socket transport on :5555")
+    if(WIN32)
+        target_link_libraries(main ws2_32)
+    endif()
+elseif(PRODUCER STREQUAL "modbus")
+    target_compile_definitions(main PRIVATE PRODUCER_MODBUS=1)
+    message(STATUS "Sim producer: Modbus TCP poller (HMI_MODBUS_HOST/HMI_MODBUS_PORT, default 127.0.0.1:5020)")
     if(WIN32)
         target_link_libraries(main ws2_32)
     endif()

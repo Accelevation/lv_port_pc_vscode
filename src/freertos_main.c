@@ -35,6 +35,8 @@
 
 #ifdef PRODUCER_SOCKET
 extern void socket_transport_task(void *pv);
+#elif defined(PRODUCER_MODBUS)
+extern void modbus_link_task(void *pv);
 #endif
 
 #include <stdio.h>
@@ -84,6 +86,14 @@ static void ui_task(void * pvParameters)
         transport_set_active((transport_id_t)iface.active);
     }
 
+#ifdef PRODUCER_MODBUS
+    /* This build's only data source speaks Modbus -- force the active
+     * transport regardless of whatever interface selection was last
+     * persisted, so the breakers screen renders the real Cortex topology
+     * (bcms_topology_get()) instead of demo/CAN assumptions. */
+    transport_set_active(TRANSPORT_MODBUS);
+#endif
+
     ui_init();
 
     uint32_t perf_log_ms = 0;
@@ -125,7 +135,7 @@ static void ui_task(void * pvParameters)
     }
 }
 
-#ifndef PRODUCER_SOCKET
+#if !defined(PRODUCER_SOCKET) && !defined(PRODUCER_MODBUS)
 /* Demo producer — drives every UI domain from the portable src/demo/ module.
  * The fabrication logic lives there so the sim and both firmware targets share
  * one copy; this task is just the platform's timing loop. */
@@ -137,7 +147,7 @@ static void dashboard_producer_task(void * pvParameters)
         vTaskDelay(pdMS_TO_TICKS(250));
     }
 }
-#endif /* PRODUCER_SOCKET */
+#endif /* !PRODUCER_SOCKET && !PRODUCER_MODBUS */
 
 /* Commits dirty settings to storage off the UI task. Flash erases can take
  * hundreds of milliseconds on real hardware; doing that on the UI task would
@@ -198,6 +208,12 @@ int main(int argc, char ** argv)
     if(xTaskCreate(socket_transport_task, "Sock", 2048,
                    NULL, DEMO_TASK_PRIORITY, NULL) != pdPASS) {
         printf("Failed to create socket transport task\n");
+        return 1;
+    }
+#elif defined(PRODUCER_MODBUS)
+    if(xTaskCreate(modbus_link_task, "Modbus", 4096,
+                   NULL, DEMO_TASK_PRIORITY, NULL) != pdPASS) {
+        printf("Failed to create modbus link task\n");
         return 1;
     }
 #else
