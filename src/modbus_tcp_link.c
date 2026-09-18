@@ -63,7 +63,20 @@ static void mb_link_load_env(void)
 
     strncpy(g_host, (h && *h) ? h : MB_LINK_DEFAULT_HOST, sizeof g_host - 1);
     g_host[sizeof g_host - 1] = '\0';
-    g_port = (uint16_t)((p && *p) ? atoi(p) : (int)MB_LINK_DEFAULT_PORT);
+
+    g_port = (uint16_t)MB_LINK_DEFAULT_PORT;
+    if (p && *p) {
+        char *endp = NULL;
+        long v = strtol(p, &endp, 10);
+
+        if (endp == p || *endp != '\0' || v < 1 || v > 65535) {
+            printf("modbus: bad HMI_MODBUS_PORT '%s', falling back to %u\n",
+                   p, (unsigned)MB_LINK_DEFAULT_PORT);
+            fflush(stdout);
+        } else {
+            g_port = (uint16_t)v;
+        }
+    }
 
     g_env_loaded = 1;
 }
@@ -93,9 +106,12 @@ static int mb_link_wait_ready(SOCKET s, int for_write, uint32_t timeout_ms)
     return r > 0;
 }
 
-static int mb_link_recv_all(SOCKET s, uint8_t *buf, int len, uint32_t timeout_ms)
+/* Bounded by an ABSOLUTE deadline (ms, mb_link_now_ms() clock), not a fresh
+ * per-call duration -- callers share one deadline across a whole transaction
+ * (see mb_link_transact) so the transaction's total wall time is bounded by
+ * timeout_ms, not by timeout_ms per phase (review r0 M1). */
+static int mb_link_recv_until(SOCKET s, uint8_t *buf, int len, uint32_t deadline_ms)
 {
-    uint32_t deadline = mb_link_now_ms() + timeout_ms;
     int got = 0;
 
     while (got < len) {
@@ -103,8 +119,8 @@ static int mb_link_recv_all(SOCKET s, uint8_t *buf, int len, uint32_t timeout_ms
         uint32_t remain;
         int n;
 
-        if ((int32_t)(deadline - now) <= 0) { return -1; }
-        remain = deadline - now;
+        if ((int32_t)(deadline_ms - now) <= 0) { return -1; }
+        remain = deadline_ms - now;
 
         if (!mb_link_wait_ready(s, 0, remain)) { return -1; }
 
@@ -115,9 +131,8 @@ static int mb_link_recv_all(SOCKET s, uint8_t *buf, int len, uint32_t timeout_ms
     return got;
 }
 
-static int mb_link_send_all(SOCKET s, const uint8_t *buf, int len, uint32_t timeout_ms)
+static int mb_link_send_until(SOCKET s, const uint8_t *buf, int len, uint32_t deadline_ms)
 {
-    uint32_t deadline = mb_link_now_ms() + timeout_ms;
     int sent = 0;
 
     while (sent < len) {
@@ -125,8 +140,8 @@ static int mb_link_send_all(SOCKET s, const uint8_t *buf, int len, uint32_t time
         uint32_t remain;
         int n;
 
-        if ((int32_t)(deadline - now) <= 0) { return -1; }
-        remain = deadline - now;
+        if ((int32_t)(deadline_ms - now) <= 0) { return -1; }
+        remain = deadline_ms - now;
 
         if (!mb_link_wait_ready(s, 1, remain)) { return -1; }
 
@@ -138,7 +153,7 @@ static int mb_link_send_all(SOCKET s, const uint8_t *buf, int len, uint32_t time
 }
 
 /* Non-blocking connect gated by select() so a dead/unreachable host never
- * blocks the task, then back to blocking mode -- mb_link_recv_all/send_all
+ * blocks the task, then back to blocking mode -- mb_link_recv_until/send_until
  * supply their own select()-based bound on the blocking socket. */
 static int mb_link_try_connect(uint32_t timeout_ms)
 {
@@ -225,19 +240,13 @@ static int mb_link_ensure_connected(uint32_t timeout_ms)
     return 1;
 }
 
-/* Discards the current connection so the next transact() reconnects and
- * resyncs on a fresh MBAP stream. TCP has no "flush unread bytes" short of
- * closing -- a late/mismatched reply left on the wire would otherwise be
- * misread as the answer to a later, unrelated request. This is also what a
- * timeout inside transact() itself already does before returning -1 (below),
- * so a late reply is never read as the next request's reply either way.
- *
- * Not yet wired into mb_link_t: the poller's optional `drain` hook (called
- * after any non-OK transaction -- timeout, CRC/tid/count mismatch, exception)
- * lands with the T9 rebase. Once `mb_link_t` grows it, set
- * `link.drain = mb_link_drain;` next to the other `link.*` assignments in
- * modbus_link_task -- this function already does exactly what that hook
- * needs and takes the same `void *ctx` (unused, single global link here). */
+/* mb_link_t.drain: called by the poller after any non-OK transaction (timeout,
+ * short, CRC, unit, fc, count, TCP tid, exception) before the next request.
+ * TCP has no "flush unread bytes" short of closing -- a late/mismatched reply
+ * left on the wire would otherwise be misread as the answer to a later,
+ * unrelated request, one transaction behind, forever (modbus_poller.h's
+ * MB_ERR_TID note). Closing also covers a timeout inside transact() itself,
+ * which already closes before returning -1 (below) for the same reason. */
 static void mb_link_drain(void *ctx)
 {
     (void)ctx;
@@ -249,10 +258,18 @@ static void mb_link_drain(void *ctx)
  * poller built req itself (tid included via mb_tcp_build_read); this link
  * only moves bytes. Every failure path closes the socket first -- a timed-
  * out or short reply must never be left for the next transact() to read as
- * its answer. */
+ * its answer.
+ *
+ * timeout_ms is the WHOLE transaction's budget: one deadline is computed
+ * once connected and shared across send, header recv and body recv, so a
+ * peer that trickles bytes across all three phases cannot hold the call for
+ * up to 3x timeout_ms (review r0 M1) -- connecting itself (rare: only on the
+ * first call or after a failure) keeps its own full timeout_ms budget in
+ * mb_link_ensure_connected, separate from this deadline. */
 static int mb_link_transact(void *ctx, const uint8_t *req, int req_len,
                              uint8_t *rsp, int rsp_cap, uint32_t timeout_ms)
 {
+    uint32_t deadline;
     uint8_t hdr[7];
     uint16_t mbap_len;
     int rest;
@@ -264,12 +281,14 @@ static int mb_link_transact(void *ctx, const uint8_t *req, int req_len,
         return -1;
     }
 
-    if (mb_link_send_all(g_sock, req, req_len, timeout_ms) < 0) {
+    deadline = mb_link_now_ms() + timeout_ms;
+
+    if (mb_link_send_until(g_sock, req, req_len, deadline) < 0) {
         mb_link_close();
         g_last_transact_ok = 0;
         return -1;
     }
-    if (mb_link_recv_all(g_sock, hdr, 7, timeout_ms) < 0) {
+    if (mb_link_recv_until(g_sock, hdr, 7, deadline) < 0) {
         mb_link_close();
         g_last_transact_ok = 0;
         return -1;
@@ -289,7 +308,7 @@ static int mb_link_transact(void *ctx, const uint8_t *req, int req_len,
     }
 
     memcpy(rsp, hdr, 7);
-    if (rest > 0 && mb_link_recv_all(g_sock, rsp + 7, rest, timeout_ms) < 0) {
+    if (rest > 0 && mb_link_recv_until(g_sock, rsp + 7, rest, deadline) < 0) {
         mb_link_close();
         g_last_transact_ok = 0;
         return -1;
@@ -344,36 +363,55 @@ void modbus_link_task(void *pv)
     link.is_tcp = 1;
     link.timeout_ms = MB_LINK_TIMEOUT_MS;
     link.now_ms = mb_link_now_ms;
-    /* link.drain = mb_link_drain; -- wire once mb_link_t grows the optional
-     * drain member (T9 rebase); see mb_link_drain's comment above. */
-    mb_poller_init(&link, MODBUS_MAP_CTX, MODBUS_MAP_CTX_N);
+    link.drain = mb_link_drain;
+
+    if (!mb_poller_init(&link, MODBUS_MAP_CTX, MODBUS_MAP_CTX_N)) {
+        /* Refused (bad map/link, never a runtime condition here) -- every
+         * mb_poller_step() call from here on returns MB_STEP_IDLE, so the
+         * loop below backs off at MB_LINK_DOWN_STEP_DELAY_MS forever rather
+         * than spinning. Logged once so an idle producer is diagnosable
+         * instead of looking like a silently dead task. */
+        printf("modbus: mb_poller_init refused the map -- producer stays idle\n");
+        fflush(stdout);
+    }
 
     last_stats_ms = mb_link_now_ms();
 
     for (;;) {
-        uint32_t now;
+        int step = mb_poller_step();
 
-        mb_poller_step();
+        {
+            uint32_t now = mb_link_now_ms();
+            if (now - last_stats_ms >= MB_LINK_STATS_PERIOD_MS) {
+                mb_stats_t st;
+                bcms_topology_t topo;
 
-        now = mb_link_now_ms();
-        if (now - last_stats_ms >= MB_LINK_STATS_PERIOD_MS) {
-            mb_stats_t st;
-            bcms_topology_t topo;
+                mb_poller_stats(&st);
+                bcms_topology_get(&topo);
 
-            mb_poller_stats(&st);
-            bcms_topology_get(&topo);
-
-            printf("MB cyc=%lu ms=%lu/%lu ok=%lu to=%lu crc=%lu exc=%lu nan=%lu cfg=%lu topo=%s/%u\n",
-                   (unsigned long)st.cycles, (unsigned long)st.cycle_ms_last, (unsigned long)st.cycle_ms_max,
-                   (unsigned long)st.ok, (unsigned long)st.timeout, (unsigned long)st.crc,
-                   (unsigned long)st.exc, (unsigned long)st.nan, (unsigned long)st.cfg_changes,
-                   mb_link_topo_status_name(topo.status), (unsigned)topo.circuits);
-            fflush(stdout);
-            last_stats_ms = now;
+                printf("MB cyc=%lu ms=%lu/%lu ok=%lu to=%lu crc=%lu exc=%lu nan=%lu cfg=%lu ovr=%lu topo=%s/%u\n",
+                       (unsigned long)st.cycles, (unsigned long)st.cycle_ms_last, (unsigned long)st.cycle_ms_max,
+                       (unsigned long)st.ok, (unsigned long)st.timeout, (unsigned long)st.crc,
+                       (unsigned long)st.exc, (unsigned long)st.nan, (unsigned long)st.cfg_changes,
+                       (unsigned long)st.overruns,
+                       mb_link_topo_status_name(topo.status), (unsigned)topo.circuits);
+                fflush(stdout);
+                last_stats_ms = now;
+            }
         }
 
-        vTaskDelay(pdMS_TO_TICKS(g_last_transact_ok ? MB_LINK_UP_STEP_DELAY_MS
-                                                     : MB_LINK_DOWN_STEP_DELAY_MS));
+        /* MB_STEP_IDLE (compared explicitly, never `if (mb_poller_step())`
+         * -- MB_STEP_IDLE is -1, a true C value) means nothing ran at all
+         * (not initialised, or init was refused): back off >= 100 ms so a
+         * permanently idle poller never busy-spins. A transaction that DID
+         * run (MB_STEP_TXN or MB_STEP_CYCLE) paces on whether it actually
+         * succeeded, same as before. */
+        if (step == MB_STEP_IDLE) {
+            vTaskDelay(pdMS_TO_TICKS(MB_LINK_DOWN_STEP_DELAY_MS));
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(g_last_transact_ok ? MB_LINK_UP_STEP_DELAY_MS
+                                                         : MB_LINK_DOWN_STEP_DELAY_MS));
+        }
     }
 }
 
