@@ -5,7 +5,9 @@
  * Cortex (192.168.7.3:502, READ-ONLY) exercises the real firmware data path.
  *
  * Host/port: HMI_MODBUS_HOST / HMI_MODBUS_PORT env vars, default the
- * emulator's 127.0.0.1:5020. Blocking sockets with select()-based timeouts
+ * emulator's 127.0.0.1:5020. HMI_MODBUS_MIN_CYCLE_MS (default 800, 0 = off)
+ * floors the start-to-start cycle time so the sim never hammers the live
+ * Cortex (unfloored it ran ~340 reads/s). Blocking sockets with select()-based timeouts
  * on every send/recv; reconnects with a fixed backoff on any error or
  * timeout so a dead peer never spins the task. Winsock; sim submodule only. */
 #ifdef PRODUCER_MODBUS
@@ -31,6 +33,12 @@
 #define MB_LINK_RECONNECT_BACKOFF_MS 2000u
 #define MB_LINK_STATS_PERIOD_MS      5000u
 
+/* Minimum START-TO-START poll-cycle period. Enforced once per completed cycle
+ * (MB_STEP_CYCLE); steps inside a cycle keep their 1 ms pacing. Capped below
+ * TAGS_LINK_TIMEOUT_MS (3000) so the floor alone can never age tags STALE. */
+#define MB_LINK_DEFAULT_MIN_CYCLE_MS 800u
+#define MB_LINK_MAX_MIN_CYCLE_MS     2500u
+
 /* MBAP reply cap: 7-byte header + (fc + byte-count + up to MB_MAX_READ_COUNT
  * registers), well under the poller's own RSP_CAP (260) -- mirrored here so
  * this file has no dependency on modbus_poller.c's internals. */
@@ -40,6 +48,7 @@ static SOCKET   g_sock = INVALID_SOCKET;
 static uint32_t g_backoff_until_ms;
 static char     g_host[128];
 static uint16_t g_port;
+static uint32_t g_min_cycle_ms;
 static int      g_env_loaded = 0;
 
 /* Set by mb_link_transact on every return: 1 on a byte-level success (the
@@ -54,12 +63,13 @@ static uint32_t mb_link_now_ms(void)
 
 static void mb_link_load_env(void)
 {
-    const char *h, *p;
+    const char *h, *p, *c;
 
     if (g_env_loaded) { return; }
 
     h = getenv("HMI_MODBUS_HOST");
     p = getenv("HMI_MODBUS_PORT");
+    c = getenv("HMI_MODBUS_MIN_CYCLE_MS");
 
     strncpy(g_host, (h && *h) ? h : MB_LINK_DEFAULT_HOST, sizeof g_host - 1);
     g_host[sizeof g_host - 1] = '\0';
@@ -75,6 +85,20 @@ static void mb_link_load_env(void)
             fflush(stdout);
         } else {
             g_port = (uint16_t)v;
+        }
+    }
+
+    g_min_cycle_ms = MB_LINK_DEFAULT_MIN_CYCLE_MS;
+    if (c && *c) {
+        char *endp = NULL;
+        long v = strtol(c, &endp, 10);
+
+        if (endp == c || *endp != '\0' || v < 0 || v > (long)MB_LINK_MAX_MIN_CYCLE_MS) {
+            printf("modbus: bad HMI_MODBUS_MIN_CYCLE_MS '%s' (0..%u), falling back to %u\n",
+                   c, (unsigned)MB_LINK_MAX_MIN_CYCLE_MS, (unsigned)MB_LINK_DEFAULT_MIN_CYCLE_MS);
+            fflush(stdout);
+        } else {
+            g_min_cycle_ms = (uint32_t)v;
         }
     }
 
@@ -344,6 +368,7 @@ void modbus_link_task(void *pv)
     WSADATA wsa;
     mb_link_t link;
     uint32_t last_stats_ms;
+    uint32_t cycle_start_ms;
 
     (void)pv;
 
@@ -354,7 +379,8 @@ void modbus_link_task(void *pv)
     }
 
     mb_link_load_env();
-    printf("modbus: target %s:%u\n", g_host, (unsigned)g_port);
+    printf("modbus: target %s:%u, min cycle %u ms\n", g_host, (unsigned)g_port,
+           (unsigned)g_min_cycle_ms);
     fflush(stdout);
 
     link.fn = mb_link_transact;
@@ -376,6 +402,7 @@ void modbus_link_task(void *pv)
     }
 
     last_stats_ms = mb_link_now_ms();
+    cycle_start_ms = last_stats_ms;
 
     for (;;) {
         int step = mb_poller_step();
@@ -389,11 +416,11 @@ void modbus_link_task(void *pv)
                 mb_poller_stats(&st);
                 bcms_topology_get(&topo);
 
-                printf("MB cyc=%lu ms=%lu/%lu ok=%lu to=%lu crc=%lu exc=%lu nan=%lu cfg=%lu ovr=%lu topo=%s/%u%s\n",
+                printf("MB cyc=%lu ms=%lu/%lu ok=%lu to=%lu crc=%lu exc=%lu nan=%lu cfg=%lu ovr=%lu vpd=%lu topo=%s/%u%s\n",
                        (unsigned long)st.cycles, (unsigned long)st.cycle_ms_last, (unsigned long)st.cycle_ms_max,
                        (unsigned long)st.ok, (unsigned long)st.timeout, (unsigned long)st.crc,
                        (unsigned long)st.exc, (unsigned long)st.nan, (unsigned long)st.cfg_changes,
-                       (unsigned long)st.overruns,
+                       (unsigned long)st.overruns, (unsigned long)st.vp_disagree,
                        mb_link_topo_status_name(topo.status), (unsigned)topo.circuits,
                        topo.standard_branch_unverified ? "/unv" : "");
                 fflush(stdout);
@@ -409,6 +436,19 @@ void modbus_link_task(void *pv)
          * succeeded, same as before. */
         if (step == MB_STEP_IDLE) {
             vTaskDelay(pdMS_TO_TICKS(MB_LINK_DOWN_STEP_DELAY_MS));
+        } else if (step == MB_STEP_CYCLE && g_min_cycle_ms > 0u) {
+            /* A cycle just completed: hold the next one off until
+             * g_min_cycle_ms after this one STARTED (start-to-start, so a
+             * slow cycle is not penalised twice). The per-step pacing still
+             * applies as a floor. The wait counts toward the poller's own
+             * start-to-start cycle_ms, so cycle_ms reads >= the floor. */
+            uint32_t elapsed = mb_link_now_ms() - cycle_start_ms;
+            uint32_t wait = (elapsed < g_min_cycle_ms) ? g_min_cycle_ms - elapsed : 0u;
+            uint32_t pace = g_last_transact_ok ? MB_LINK_UP_STEP_DELAY_MS
+                                               : MB_LINK_DOWN_STEP_DELAY_MS;
+
+            vTaskDelay(pdMS_TO_TICKS(wait > pace ? wait : pace));
+            cycle_start_ms = mb_link_now_ms();
         } else {
             vTaskDelay(pdMS_TO_TICKS(g_last_transact_ok ? MB_LINK_UP_STEP_DELAY_MS
                                                          : MB_LINK_DOWN_STEP_DELAY_MS));
