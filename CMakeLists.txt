@@ -212,11 +212,13 @@ add_executable(test_codec
     ${HMI_ROOT_DIR}/src/tags/tags.c
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
+    ${HMI_ROOT_DIR}/src/transport/transport.c
 )
 target_include_directories(test_codec PRIVATE
     ${HMI_ROOT_DIR}/src/comms
     ${HMI_ROOT_DIR}/src/waveform
     ${HMI_ROOT_DIR}/src/tags
+    ${HMI_ROOT_DIR}/src/transport
 )
 if (WIN32 AND MSVC)
     target_link_options(test_codec PRIVATE "/SUBSYSTEM:CONSOLE")
@@ -231,11 +233,13 @@ add_executable(test_canbus
     ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
     ${HMI_ROOT_DIR}/src/waveform/waveform.c
     ${HMI_ROOT_DIR}/src/waveform/waveform_can.c
+    ${HMI_ROOT_DIR}/src/transport/transport.c
 )
 target_include_directories(test_canbus PRIVATE
     ${HMI_ROOT_DIR}/src/canbus
     ${HMI_ROOT_DIR}/src/tags
     ${HMI_ROOT_DIR}/src/waveform
+    ${HMI_ROOT_DIR}/src/transport
 )
 if (WIN32 AND MSVC)
     target_link_options(test_canbus PRIVATE "/SUBSYSTEM:CONSOLE")
@@ -252,11 +256,13 @@ add_executable(test_waveform
     ${HMI_ROOT_DIR}/src/tags/tags.c
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
+    ${HMI_ROOT_DIR}/src/transport/transport.c
 )
 target_include_directories(test_waveform PRIVATE
     ${HMI_ROOT_DIR}/src/waveform
     ${HMI_ROOT_DIR}/src/comms
     ${HMI_ROOT_DIR}/src/tags
+    ${HMI_ROOT_DIR}/src/transport
 )
 if (WIN32 AND MSVC)
     target_link_options(test_waveform PRIVATE "/SUBSYSTEM:CONSOLE")
@@ -281,11 +287,13 @@ add_executable(test_demo_source
     ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
     ${HMI_ROOT_DIR}/src/waveform/waveform.c
     ${HMI_ROOT_DIR}/src/waveform/waveform_frames.c
+    ${HMI_ROOT_DIR}/src/transport/transport.c
 )
 target_include_directories(test_demo_source PRIVATE
     ${HMI_ROOT_DIR}/src/demo
     ${HMI_ROOT_DIR}/src/tags
     ${HMI_ROOT_DIR}/src/waveform
+    ${HMI_ROOT_DIR}/src/transport
     ${HMI_SHARED_UI_DIR}
 )
 if (WIN32 AND MSVC)
@@ -333,12 +341,14 @@ add_executable(test_tags_equivalence
     ${HMI_ROOT_DIR}/src/waveform/waveform_can.c
     ${HMI_ROOT_DIR}/src/canbus/canbus.c
     ${HMI_ROOT_DIR}/src/tags/test/test_tags_equivalence.c
+    ${HMI_ROOT_DIR}/src/transport/transport.c
 )
 target_include_directories(test_tags_equivalence PRIVATE
     ${HMI_ROOT_DIR}/src/tags
     ${HMI_ROOT_DIR}/src/comms
     ${HMI_ROOT_DIR}/src/waveform
     ${HMI_ROOT_DIR}/src/canbus
+    ${HMI_ROOT_DIR}/src/transport
 )
 if (WIN32 AND MSVC)
     target_link_options(test_tags_equivalence PRIVATE "/SUBSYSTEM:CONSOLE")
