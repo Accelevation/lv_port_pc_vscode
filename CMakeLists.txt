@@ -286,6 +286,7 @@ add_executable(test_breakers_model
     ${HMI_SHARED_UI_DIR}/ui_fmt.cpp
     ${HMI_SHARED_UI_DIR}/test/test_breakers_model.cpp
     ${HMI_ROOT_DIR}/src/bcms/topology.c
+    ${HMI_ROOT_DIR}/src/transport/transport.c
     ${HMI_ROOT_DIR}/src/tags/tags.c
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
@@ -293,6 +294,7 @@ add_executable(test_breakers_model
 target_include_directories(test_breakers_model PRIVATE
     ${HMI_SHARED_UI_DIR}
     ${HMI_ROOT_DIR}/src/bcms
+    ${HMI_ROOT_DIR}/src/transport
     ${HMI_ROOT_DIR}/src/tags
 )
 if (WIN32 AND MSVC)
