@@ -122,6 +122,10 @@ set(MAIN_SOURCES
     ${HMI_ROOT_DIR}/src/demo/demo_source.c
     ${HMI_ROOT_DIR}/src/settings/settings.c
     ${HMI_ROOT_DIR}/src/transport/transport.c
+    ${HMI_ROOT_DIR}/src/modbus/modbus_crc.c
+    ${HMI_ROOT_DIR}/src/modbus/modbus_rtu.c
+    ${HMI_ROOT_DIR}/src/modbus/modbus_tcp.c
+    ${HMI_ROOT_DIR}/src/modbus/modbus_decode.c
     ${HMI_ROOT_DIR}/src/tags/tags.c
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/tags_port_sim.c
@@ -350,6 +354,24 @@ if (WIN32 AND MSVC)
     target_link_options(test_transport PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
+# --- Host unit test for the portable Modbus RTU/TCP codec + map decode (no LVGL/SDL/RTOS) ---
+add_executable(test_modbus
+    ${HMI_ROOT_DIR}/src/modbus/modbus_crc.c
+    ${HMI_ROOT_DIR}/src/modbus/modbus_rtu.c
+    ${HMI_ROOT_DIR}/src/modbus/modbus_tcp.c
+    ${HMI_ROOT_DIR}/src/modbus/modbus_decode.c
+    ${HMI_ROOT_DIR}/src/modbus/test/test_modbus.c
+    ${HMI_ROOT_DIR}/src/transport/transport.c
+)
+target_include_directories(test_modbus PRIVATE
+    ${HMI_ROOT_DIR}/src/modbus
+    ${HMI_ROOT_DIR}/src/transport
+    ${HMI_ROOT_DIR}/src/tags
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_modbus PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
 target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
 
 if(PRODUCER STREQUAL "socket")
@@ -362,7 +384,7 @@ else()
     message(STATUS "Sim producer: internal dummy wander task")
 endif()
 
-target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/waveform ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo ${HMI_ROOT_DIR}/src/settings ${HMI_ROOT_DIR}/src/transport ${HMI_ROOT_DIR}/src/tags)
+target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/waveform ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo ${HMI_ROOT_DIR}/src/settings ${HMI_ROOT_DIR}/src/transport ${HMI_ROOT_DIR}/src/modbus ${HMI_ROOT_DIR}/src/tags)
 target_include_directories(main PRIVATE
     ${PROJECT_SOURCE_DIR}/FreeRTOS/include
     ${PROJECT_SOURCE_DIR}/FreeRTOS/portable/MSVC-MingW
