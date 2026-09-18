@@ -389,12 +389,13 @@ void modbus_link_task(void *pv)
                 mb_poller_stats(&st);
                 bcms_topology_get(&topo);
 
-                printf("MB cyc=%lu ms=%lu/%lu ok=%lu to=%lu crc=%lu exc=%lu nan=%lu cfg=%lu ovr=%lu topo=%s/%u\n",
+                printf("MB cyc=%lu ms=%lu/%lu ok=%lu to=%lu crc=%lu exc=%lu nan=%lu cfg=%lu ovr=%lu topo=%s/%u%s\n",
                        (unsigned long)st.cycles, (unsigned long)st.cycle_ms_last, (unsigned long)st.cycle_ms_max,
                        (unsigned long)st.ok, (unsigned long)st.timeout, (unsigned long)st.crc,
                        (unsigned long)st.exc, (unsigned long)st.nan, (unsigned long)st.cfg_changes,
                        (unsigned long)st.overruns,
-                       mb_link_topo_status_name(topo.status), (unsigned)topo.circuits);
+                       mb_link_topo_status_name(topo.status), (unsigned)topo.circuits,
+                       topo.standard_branch_unverified ? "/unv" : "");
                 fflush(stdout);
                 last_stats_ms = now;
             }
