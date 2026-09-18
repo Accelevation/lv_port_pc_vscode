@@ -458,6 +458,9 @@ if (WIN32 AND MSVC)
 endif()
 
 target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
+# The sim's Modbus link, whenever it exists, is TCP: transport.c then labels
+# TRANSPORT_MODBUS "TCP (Cortex Modbus)" instead of the H757's RS485 label.
+target_compile_definitions(main PRIVATE HMI_MODBUS_LINK_TCP=1)
 
 if(PRODUCER STREQUAL "socket")
     target_compile_definitions(main PRIVATE PRODUCER_SOCKET=1)
