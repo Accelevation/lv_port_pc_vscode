@@ -126,6 +126,7 @@ set(MAIN_SOURCES
     ${HMI_ROOT_DIR}/src/modbus/modbus_rtu.c
     ${HMI_ROOT_DIR}/src/modbus/modbus_tcp.c
     ${HMI_ROOT_DIR}/src/modbus/modbus_decode.c
+    ${HMI_ROOT_DIR}/src/modbus/modbus_map_ctx.c
     ${HMI_ROOT_DIR}/src/tags/tags.c
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/tags_port_sim.c
@@ -365,14 +366,18 @@ if (WIN32 AND MSVC)
     target_link_options(test_transport PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
-# --- Host unit test for the portable Modbus RTU/TCP codec + map decode (no LVGL/SDL/RTOS) ---
+# --- Host unit test for the portable Modbus RTU/TCP codec, map decode and generated Cortex map (no LVGL/SDL/RTOS) ---
 add_executable(test_modbus
     ${HMI_ROOT_DIR}/src/modbus/modbus_crc.c
     ${HMI_ROOT_DIR}/src/modbus/modbus_rtu.c
     ${HMI_ROOT_DIR}/src/modbus/modbus_tcp.c
     ${HMI_ROOT_DIR}/src/modbus/modbus_decode.c
+    ${HMI_ROOT_DIR}/src/modbus/modbus_map_ctx.c
     ${HMI_ROOT_DIR}/src/modbus/test/test_modbus.c
     ${HMI_ROOT_DIR}/src/transport/transport.c
+    ${HMI_ROOT_DIR}/src/tags/tags.c
+    ${HMI_ROOT_DIR}/src/tags/tag_desc.c
+    ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
 )
 target_include_directories(test_modbus PRIVATE
     ${HMI_ROOT_DIR}/src/modbus
