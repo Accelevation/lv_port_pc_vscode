@@ -134,6 +134,8 @@ set(MAIN_SOURCES
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/tags_port_sim.c
     ${HMI_ROOT_DIR}/src/bcms/topology.c
+    ${HMI_ROOT_DIR}/src/rtc/rtc.c
+    ${HMI_ROOT_DIR}/src/rtc/rtc_store.c
 )
 set(MAIN_LIBS lvgl lvgl::thorvg ${SDL2_LIBRARIES})
 
@@ -359,6 +361,23 @@ if (WIN32 AND MSVC)
     target_link_options(test_tags PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
+# --- Host unit test for the wall-clock RTC codec + store (issue #92; no
+# LVGL/SDL/RTOS) -- rtc_store.c reuses the tags mutex seam, so it links the
+# same host fake as test_tags rather than a third mutex fake. ---
+add_executable(test_rtc
+    ${HMI_ROOT_DIR}/src/rtc/rtc.c
+    ${HMI_ROOT_DIR}/src/rtc/rtc_store.c
+    ${HMI_ROOT_DIR}/src/rtc/test/test_rtc.c
+    ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
+)
+target_include_directories(test_rtc PRIVATE
+    ${HMI_ROOT_DIR}/src/rtc
+    ${HMI_ROOT_DIR}/src/tags
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_rtc PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
 # --- Cross-protocol equivalence: RS485 and CAN must agree (no LVGL/SDL/RTOS) ---
 add_executable(test_tags_equivalence
     ${HMI_ROOT_DIR}/src/tags/tags.c
@@ -478,7 +497,7 @@ else()
     message(STATUS "Sim producer: internal dummy wander task")
 endif()
 
-target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/waveform ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo ${HMI_ROOT_DIR}/src/settings ${HMI_ROOT_DIR}/src/transport ${HMI_ROOT_DIR}/src/modbus ${HMI_ROOT_DIR}/src/tags ${HMI_ROOT_DIR}/src/bcms)
+target_include_directories(main PRIVATE ${HMI_SHARED_UI_DIR} ${HMI_ROOT_DIR}/src/comms ${HMI_ROOT_DIR}/src/waveform ${HMI_ROOT_DIR}/src/canbus ${HMI_ROOT_DIR}/src/demo ${HMI_ROOT_DIR}/src/settings ${HMI_ROOT_DIR}/src/transport ${HMI_ROOT_DIR}/src/modbus ${HMI_ROOT_DIR}/src/tags ${HMI_ROOT_DIR}/src/bcms ${HMI_ROOT_DIR}/src/rtc)
 target_include_directories(main PRIVATE
     ${PROJECT_SOURCE_DIR}/FreeRTOS/include
     ${PROJECT_SOURCE_DIR}/FreeRTOS/portable/MSVC-MingW

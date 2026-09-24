@@ -19,6 +19,10 @@
 #include "demo_source.h"
 #include "settings.h"
 #include "transport.h"
+#include "rtc.h"        /* rtc_time_is_sane() */
+#include "rtc_store.h"  /* rtc_store_publish()/rtc_store_take_pending_set() -- see rtc_sim_poll() below */
+
+#include <time.h>
 /* settings_backend_mutex_create() is declared here rather than hand-forward-
  * declared: three copies of that declaration had accumulated across this file
  * and the two firmware main.c files, and a signature drift between them is a
@@ -149,16 +153,62 @@ static void dashboard_producer_task(void * pvParameters)
 }
 #endif /* !PRODUCER_SOCKET && !PRODUCER_MODBUS */
 
+/* Sim stand-in for the h757's DS1307 driver (issue #92): the sim has no RTC
+ * chip to read, so it PUBLISHES the host PC's own clock into rtc_store at
+ * ~1 Hz -- reusing the exact publish/read path app_shell and clock_dialog use
+ * on real hardware, so the shell clock/date and the config screen's clock row
+ * exercise the same code in the sim as on the board.
+ *
+ * A manual set from clock_dialog is deliberately IGNORED here, not applied:
+ * the sim's clock source is the host PC, which this process cannot (and
+ * should not) set, so a request is drained and logged rather than silently
+ * dropped -- an operator pressing Save gets a console line explaining why
+ * nothing changed, instead of wondering whether the tap landed. */
+static void rtc_sim_poll(void)
+{
+    time_t now = time(NULL);
+    struct tm *lt = localtime(&now);   /* single-caller (this task); localtime()'s static buffer is safe here */
+    if(lt) {
+        rtc_time_t t;
+        t.year   = (int16_t)(lt->tm_year + 1900);
+        t.month  = (uint8_t)(lt->tm_mon + 1);
+        t.day    = (uint8_t)lt->tm_mday;
+        t.hour   = (uint8_t)lt->tm_hour;
+        t.minute = (uint8_t)lt->tm_min;
+        t.second = (uint8_t)lt->tm_sec;
+        rtc_store_publish(&t, rtc_time_is_sane(&t));
+    }
+
+    rtc_time_t req;
+    if(rtc_store_take_pending_set(&req)) {
+        printf("[RTC] manual set IGNORED (sim tracks the host PC clock): "
+               "%04d-%02d-%02d %02d:%02d:%02d\n",
+               (int)req.year, (int)req.month, (int)req.day,
+               (int)req.hour, (int)req.minute, (int)req.second);
+        fflush(stdout);
+    }
+}
+
 /* Commits dirty settings to storage off the UI task. Flash erases can take
  * hundreds of milliseconds on real hardware; doing that on the UI task would
  * freeze LVGL exactly as a modal closes. Polling is fine — settings change at
- * human speed. */
+ * human speed.
+ *
+ * Also drives rtc_sim_poll() at ~1 Hz (every 5th 200 ms tick): piggybacked on
+ * this existing low-priority poll loop rather than a new task, mirroring the
+ * same "don't add a task for a cheap 1 Hz poll" choice made in the h757
+ * firmware's settings_writer_task (ds1307_poll()). */
 static void settings_writer_task(void *pvParameters)
 {
     (void)pvParameters;
+    int rtc_tick = 0;
     for(;;) {
         vTaskDelay(pdMS_TO_TICKS(200));
         settings_commit_if_dirty();
+        if(++rtc_tick >= 5) {
+            rtc_tick = 0;
+            rtc_sim_poll();
+        }
     }
 }
 
