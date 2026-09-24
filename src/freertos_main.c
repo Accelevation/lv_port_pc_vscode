@@ -19,6 +19,7 @@
 #include "demo_source.h"
 #include "settings.h"
 #include "transport.h"
+#include "identity.h"   /* bcms_identity_clear() -- issue #86 review m2 */
 #include "rtc.h"        /* rtc_time_is_sane() */
 #include "rtc_store.h"  /* rtc_store_publish()/rtc_store_take_pending_set() -- see rtc_sim_poll() below */
 
@@ -97,6 +98,10 @@ static void ui_task(void * pvParameters)
      * (bcms_topology_get()) instead of demo/CAN assumptions. */
     transport_set_active(TRANSPORT_MODBUS);
 #endif
+    /* Resolved to a non-Modbus transport: clear any stale identity before
+     * mb_poller_init() (never called this boot) would have -- issue #86
+     * review m2. */
+    if (transport_active() != TRANSPORT_MODBUS) { bcms_identity_clear(); }
 
     ui_init();
 
