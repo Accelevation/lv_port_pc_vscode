@@ -163,7 +163,14 @@ static void dashboard_producer_task(void * pvParameters)
  * the sim's clock source is the host PC, which this process cannot (and
  * should not) set, so a request is drained and logged rather than silently
  * dropped -- an operator pressing Save gets a console line explaining why
- * nothing changed, instead of wondering whether the tap landed. */
+ * nothing changed, instead of wondering whether the tap landed.
+ *
+ * Left as RTC_SET_STATUS_PENDING forever (rtc_store_set_status() never
+ * hears APPLIED or FAILED for it) rather than faking either: nothing was
+ * actually written to a clock, so APPLIED would be a lie, and nothing failed
+ * either -- there's no retry loop for FAILED to describe truthfully. The
+ * config screen's clock row can show a stale "(saving...)" after a sim Save
+ * as a result; the console line right here is the sim's real answer. */
 static void rtc_sim_poll(void)
 {
     time_t now = time(NULL);
@@ -179,12 +186,12 @@ static void rtc_sim_poll(void)
         rtc_store_publish(&t, rtc_time_is_sane(&t));
     }
 
-    rtc_time_t req;
+    rtc_pending_set_t req;
     if(rtc_store_take_pending_set(&req)) {
         printf("[RTC] manual set IGNORED (sim tracks the host PC clock): "
                "%04d-%02d-%02d %02d:%02d:%02d\n",
-               (int)req.year, (int)req.month, (int)req.day,
-               (int)req.hour, (int)req.minute, (int)req.second);
+               (int)req.t.year, (int)req.t.month, (int)req.t.day,
+               (int)req.t.hour, (int)req.t.minute, (int)req.t.second);
         fflush(stdout);
     }
 }
