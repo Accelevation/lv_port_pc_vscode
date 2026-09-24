@@ -137,6 +137,7 @@ set(MAIN_SOURCES
     ${HMI_ROOT_DIR}/src/rtc/rtc.c
     ${HMI_ROOT_DIR}/src/rtc/rtc_store.c
     ${HMI_ROOT_DIR}/src/bcms/identity.c
+    ${HMI_ROOT_DIR}/src/bcms/cbema.c
 )
 set(MAIN_LIBS lvgl lvgl::thorvg ${SDL2_LIBRARIES})
 
@@ -468,6 +469,19 @@ if (WIN32 AND MSVC)
     target_link_options(test_identity PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
+# --- Host unit test for the CBEMA/ITIC sag/swell change detection (issue #80,
+#     no LVGL/SDL/RTOS, no tags.h -- cbema.c is standalone) ---
+add_executable(test_cbema
+    ${HMI_ROOT_DIR}/src/bcms/cbema.c
+    ${HMI_ROOT_DIR}/src/bcms/test/test_cbema.c
+)
+target_include_directories(test_cbema PRIVATE
+    ${HMI_ROOT_DIR}/src/bcms
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_cbema PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
 # --- Host unit test for the link-agnostic Modbus poller core: fake link over the
 #     bench snapshot image (src/modbus/test/poller_fixture_bench.h) (no LVGL/SDL/RTOS) ---
 add_executable(test_poller
@@ -480,6 +494,7 @@ add_executable(test_poller
     ${HMI_ROOT_DIR}/src/modbus/test/test_poller.c
     ${HMI_ROOT_DIR}/src/bcms/topology.c
     ${HMI_ROOT_DIR}/src/bcms/identity.c
+    ${HMI_ROOT_DIR}/src/bcms/cbema.c
     ${HMI_ROOT_DIR}/src/tags/tags.c
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
