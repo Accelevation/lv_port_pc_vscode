@@ -147,7 +147,8 @@ if(PRODUCER STREQUAL "socket")
 elseif(PRODUCER STREQUAL "modbus")
     list(APPEND MAIN_SOURCES
         src/modbus_tcp_link.c
-        ${HMI_ROOT_DIR}/src/modbus/modbus_poller.c)
+        ${HMI_ROOT_DIR}/src/modbus/modbus_poller.c
+        ${HMI_ROOT_DIR}/src/bcms/mains_select.c)
 endif()
 
 list(APPEND MAIN_SOURCES ${FREERTOS_SOURCES})
@@ -480,6 +481,7 @@ add_executable(test_poller
     ${HMI_ROOT_DIR}/src/modbus/test/test_poller.c
     ${HMI_ROOT_DIR}/src/bcms/topology.c
     ${HMI_ROOT_DIR}/src/bcms/identity.c
+    ${HMI_ROOT_DIR}/src/bcms/mains_select.c
     ${HMI_ROOT_DIR}/src/tags/tags.c
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
@@ -492,6 +494,18 @@ target_include_directories(test_poller PRIVATE
 )
 if (WIN32 AND MSVC)
     target_link_options(test_poller PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
+# --- Host unit test for the pure Aggregate Meter mains selector (no LVGL/SDL/RTOS) ---
+add_executable(test_mains_select
+    ${HMI_ROOT_DIR}/src/bcms/mains_select.c
+    ${HMI_ROOT_DIR}/src/bcms/test/test_mains_select.c
+)
+target_include_directories(test_mains_select PRIVATE
+    ${HMI_ROOT_DIR}/src/bcms
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_mains_select PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
 target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
