@@ -136,6 +136,7 @@ set(MAIN_SOURCES
     ${HMI_ROOT_DIR}/src/bcms/topology.c
     ${HMI_ROOT_DIR}/src/rtc/rtc.c
     ${HMI_ROOT_DIR}/src/rtc/rtc_store.c
+    ${HMI_ROOT_DIR}/src/bcms/identity.c
 )
 set(MAIN_LIBS lvgl lvgl::thorvg ${SDL2_LIBRARIES})
 
@@ -451,6 +452,22 @@ if (WIN32 AND MSVC)
     target_link_options(test_topology PRIVATE "/SUBSYSTEM:CONSOLE")
 endif()
 
+# --- Host unit test for Cortex device identity (no LVGL/SDL/RTOS) ---
+add_executable(test_identity
+    ${HMI_ROOT_DIR}/src/bcms/identity.c
+    ${HMI_ROOT_DIR}/src/bcms/test/test_identity.c
+    ${HMI_ROOT_DIR}/src/tags/tags.c
+    ${HMI_ROOT_DIR}/src/tags/tag_desc.c
+    ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
+)
+target_include_directories(test_identity PRIVATE
+    ${HMI_ROOT_DIR}/src/bcms
+    ${HMI_ROOT_DIR}/src/tags
+)
+if (WIN32 AND MSVC)
+    target_link_options(test_identity PRIVATE "/SUBSYSTEM:CONSOLE")
+endif()
+
 # --- Host unit test for the link-agnostic Modbus poller core: fake link over the
 #     bench snapshot image (src/modbus/test/poller_fixture_bench.h) (no LVGL/SDL/RTOS) ---
 add_executable(test_poller
@@ -462,6 +479,7 @@ add_executable(test_poller
     ${HMI_ROOT_DIR}/src/modbus/modbus_poller.c
     ${HMI_ROOT_DIR}/src/modbus/test/test_poller.c
     ${HMI_ROOT_DIR}/src/bcms/topology.c
+    ${HMI_ROOT_DIR}/src/bcms/identity.c
     ${HMI_ROOT_DIR}/src/tags/tags.c
     ${HMI_ROOT_DIR}/src/tags/tag_desc.c
     ${HMI_ROOT_DIR}/src/tags/test/tags_port_fake.c
