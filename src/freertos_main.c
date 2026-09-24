@@ -193,6 +193,9 @@ static void rtc_sim_poll(void)
                (int)req.t.year, (int)req.t.month, (int)req.t.day,
                (int)req.t.hour, (int)req.t.minute, (int)req.t.second);
         fflush(stdout);
+        /* Resolve the request so the Config clock row doesn't sit on
+         * "(saving...)" forever; the host clock is the sim's truth. */
+        rtc_store_note_set_applied(req.seq);
     }
 }
 
