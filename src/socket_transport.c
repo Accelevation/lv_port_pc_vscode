@@ -1,6 +1,6 @@
 /* Sim-only TCP transport. Listens on 127.0.0.1:5555, streams received bytes
- * into the portable codec seam comms_on_bytes(). Winsock; sim submodule only.
- * Runs as a FreeRTOS producer task — it never touches LVGL (comms_on_bytes →
+ * into the portable codec seam frame_v1_on_bytes(). Winsock; sim submodule only.
+ * Runs as a FreeRTOS producer task — it never touches LVGL (frame_v1_on_bytes →
  * codec → thread-safe ui_set_* enqueue). */
 #ifdef PRODUCER_SOCKET
 
@@ -64,7 +64,7 @@ void socket_transport_task(void *pv)
                 if (WSAGetLastError() == WSAETIMEDOUT) { vTaskDelay(pdMS_TO_TICKS(5)); continue; }
                 printf("socket: recv error\n"); break;
             }
-            comms_on_bytes(buf, (uint32_t)r);
+            frame_v1_on_bytes(buf, (uint32_t)r);
         }
         closesocket(cli);
         closesocket(srv);
