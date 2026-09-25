@@ -1,7 +1,7 @@
 /* Sim-only frame_v1 carrier: TCP in place of the board's RS485 wire. Listens on
  * 127.0.0.1:5555 and streams received bytes into the portable frame_v1
  * protocol entry point frame_v1_on_bytes() -- the same call the H757's
- * rs485_stream_rx_task makes. Winsock; sim submodule only. Runs as a FreeRTOS
+ * rs485_frame_v1_rx_task makes. Winsock; sim submodule only. Runs as a FreeRTOS
  * producer task -- it never touches LVGL (frame_v1_on_bytes -> codec ->
  * tags_publish_batch() into the point table). */
 #ifdef PRODUCER_SOCKET

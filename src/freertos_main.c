@@ -95,7 +95,7 @@ static void ui_task(void * pvParameters)
      * transport regardless of whatever interface selection was last
      * persisted, so the breakers screen renders the real Cortex topology
      * (bcms_topology_get()) instead of demo/CAN assumptions. */
-    transport_set_active(TRANSPORT_MODBUS);
+    transport_set_active(TRANSPORT_RS485_MODBUS_CORTEX);
 #endif
 
     ui_init();
