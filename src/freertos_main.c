@@ -1,12 +1,16 @@
 /**
  * @file    FreeRTOS entry for the LVGL PC simulator
  *
- * Two tasks:
+ * Tasks:
  *   - UI task         — owns LVGL: lv_init() + sdl_hal_init() + ui_init(),
- *                       then loops drain-queue + lv_timer_handler.
+ *                       then loops ui_runtime_tick() (lv_timer_handler).
  *                       LVGL is NOT thread-safe; only this task touches it.
- *   - Dashboard producer — pushes wandering System/Panels snapshots via
- *                       ui_set_system/ui_set_panels.
+ *   - ONE data source, chosen at build time, publishing into the point table
+ *     with tags_publish_batch() (views read it with ui_tag_read()):
+ *       PRODUCER_SOCKET — frame_v1 over TCP 127.0.0.1:5555 (socket_transport.c)
+ *       PRODUCER_MODBUS — Modbus TCP to the Cortex emulator (modbus_tcp_link.c)
+ *       neither         — dashboard_producer_task below (synthetic, src/demo/)
+ *   - Settings writer.
  */
 
 #include "FreeRTOS.h"
